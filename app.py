@@ -369,6 +369,25 @@ with app.app_context():
     seed_if_empty()
 
 
+def _lan_ip() -> str:
+    import socket
+
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+            sock.connect(("8.8.8.8", 80))
+            return sock.getsockname()[0]
+    except OSError:
+        return "127.0.0.1"
+
+
 if __name__ == "__main__":
-    print("방문일정 공유 서버: http://127.0.0.1:5000")
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    import os
+
+    host = os.environ.get("HOST", "0.0.0.0")
+    port = int(os.environ.get("PORT", "5000"))
+    debug = os.environ.get("FLASK_DEBUG", "1") == "1"
+    lan = _lan_ip()
+    print(f"로컬:   http://127.0.0.1:{port}")
+    print(f"내부망: http://{lan}:{port}")
+    print("외부(인터넷) 접속은 터널 또는 클라우드 배포가 필요합니다.")
+    app.run(debug=debug, host=host, port=port)
