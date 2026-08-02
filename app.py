@@ -1,16 +1,29 @@
 """POSCO 방문일정 공유 웹앱 — Flask 서버."""
 
 import json
+import os
 from datetime import datetime, time
 from pathlib import Path
 
 from flask import Flask, jsonify, request, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import inspect
 
 BASE_DIR = Path(__file__).resolve().parent
 
+
+def database_uri() -> str:
+    """Render 등에서는 DATABASE_URL(Postgres), 로컬은 SQLite."""
+    url = (os.environ.get("DATABASE_URL") or "").strip()
+    if not url:
+        return f"sqlite:///{BASE_DIR / 'visits.db'}"
+    if url.startswith("postgres://"):
+        url = "postgresql://" + url[len("postgres://") :]
+    return url
+
+
 app = Flask(__name__, static_folder=None)
-app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{BASE_DIR / 'visits.db'}"
+app.config["SQLALCHEMY_DATABASE_URI"] = database_uri()
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db = SQLAlchemy(app)
@@ -347,17 +360,20 @@ def seed_if_empty():
 
 
 def ensure_schema():
-    """기존 DB에 새 컬럼이 없으면 추가."""
+    """기존 DB에 새 컬럼이 없으면 추가 (SQLite/Postgres 공통)."""
+    inspector = inspect(db.engine)
+    if not inspector.has_table("visits"):
+        return
+    cols = {c["name"] for c in inspector.get_columns("visits")}
+    alterations = {
+        "registrant_email": "ALTER TABLE visits ADD COLUMN registrant_email VARCHAR(200) NOT NULL DEFAULT ''",
+        "schedule_items": "ALTER TABLE visits ADD COLUMN schedule_items TEXT NOT NULL DEFAULT '[]'",
+        "visitor_email": "ALTER TABLE visits ADD COLUMN visitor_email VARCHAR(200) NOT NULL DEFAULT ''",
+        "visitor_phone": "ALTER TABLE visits ADD COLUMN visitor_phone VARCHAR(80) NOT NULL DEFAULT ''",
+        "visitor_clearance": "ALTER TABLE visits ADD COLUMN visitor_clearance VARCHAR(80) NOT NULL DEFAULT ''",
+        "visitor_notes": "ALTER TABLE visits ADD COLUMN visitor_notes TEXT NOT NULL DEFAULT ''",
+    }
     with db.engine.begin() as conn:
-        cols = {row[1] for row in conn.exec_driver_sql("PRAGMA table_info(visits)")}
-        alterations = {
-            "registrant_email": "ALTER TABLE visits ADD COLUMN registrant_email VARCHAR(200) NOT NULL DEFAULT ''",
-            "schedule_items": "ALTER TABLE visits ADD COLUMN schedule_items TEXT NOT NULL DEFAULT '[]'",
-            "visitor_email": "ALTER TABLE visits ADD COLUMN visitor_email VARCHAR(200) NOT NULL DEFAULT ''",
-            "visitor_phone": "ALTER TABLE visits ADD COLUMN visitor_phone VARCHAR(80) NOT NULL DEFAULT ''",
-            "visitor_clearance": "ALTER TABLE visits ADD COLUMN visitor_clearance VARCHAR(80) NOT NULL DEFAULT ''",
-            "visitor_notes": "ALTER TABLE visits ADD COLUMN visitor_notes TEXT NOT NULL DEFAULT ''",
-        }
         for name, sql in alterations.items():
             if name not in cols:
                 conn.exec_driver_sql(sql)
