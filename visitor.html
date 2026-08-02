@@ -154,17 +154,26 @@
 <h3 class="font-label-caps text-label-caps text-primary uppercase">기본 정보</h3>
 </div>
 <div class="grid gap-md">
-<!-- Profile Image Placeholder -->
+<!-- Profile Image -->
 <div class="flex justify-center py-md">
-<div class="relative group">
-<div class="w-24 h-24 rounded-full border-2 border-dashed border-outline-variant flex items-center justify-center bg-surface-container-low overflow-hidden">
-<img class="w-full h-full object-cover" data-alt="A formal professional headshot portrait of a visitor in a business suit, set against a clean gray studio background with soft Rembrandt lighting. The image maintains a high-end corporate aesthetic with sharp focus and minimal color saturation, reflecting institutional excellence and professional rigor." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBbPmg0wrkXg6v2IvscUCodbUv0LmTKJjH4Iyt8Ue6_-tPFHaAWA7Bsr7KrED9xzo2ZyXNH8tLCxvS7GuYERWNkPddEkjpVlMR3-3tbGGeD3jWMC4Y9aZaXctBoBlhqNNRHeyUnglMLd_AhFYQFwy5DQ5dEgGc0aFANKmpeRuTHxqU6Y0iTJQPKlnNpslWOeiuojr_tDLp7RTZa5JK_hqZAC5xe5upPsJAhXBE-vX_pxOg7hzZTLLA">
-<div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-<span class="material-symbols-outlined text-white">photo_camera</span>
+<div class="relative">
+<label for="visitor-photo-input" class="block cursor-pointer">
+<div id="visitor-photo-frame" class="w-[96px] h-[128px] rounded-md border border-outline-variant bg-[#e8edf5] overflow-hidden flex items-center justify-center shadow-sm">
+<img id="visitor-photo-img" class="hidden w-full h-full object-cover" alt="방문객 증명사진">
+<svg id="visitor-photo-placeholder" class="w-full h-full" viewBox="0 0 96 128" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+<rect width="96" height="128" fill="#e8edf5"/>
+<circle cx="48" cy="42" r="22" fill="#b0becf"/>
+<path d="M18 118c0-22 13.4-36 30-36s30 14 30 36" fill="#b0becf"/>
+</svg>
+</div>
+<div class="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center shadow border-2 border-white">
+<span class="material-symbols-outlined text-[18px]">photo_camera</span>
+</div>
+</label>
+<input id="visitor-photo-input" type="file" accept="image/*" class="hidden">
 </div>
 </div>
-</div>
-</div>
+<p class="text-center text-[11px] text-on-surface-variant -mt-2 mb-2">증명사진을 업로드하세요</p>
 <div class="space-y-base">
 <label class="font-label-caps text-label-caps text-on-surface-variant block">성명 (Full Name)</label>
 <input id="visitor-name" class="w-full px-md py-sm border border-outline-variant rounded-lg bg-white form-input-focus font-body-md" placeholder="방문객 성함을 입력하세요" type="text">
@@ -242,6 +251,65 @@
   const emailInput = document.getElementById('visitor-email');
   const phoneInput = document.getElementById('visitor-phone');
   const notesInput = document.getElementById('visitor-notes');
+  const photoInput = document.getElementById('visitor-photo-input');
+  const photoImg = document.getElementById('visitor-photo-img');
+  const photoPlaceholder = document.getElementById('visitor-photo-placeholder');
+  let photoDataUrl = '';
+
+  function setPhoto(dataUrl) {
+    photoDataUrl = dataUrl || '';
+    if (photoDataUrl) {
+      photoImg.src = photoDataUrl;
+      photoImg.classList.remove('hidden');
+      photoPlaceholder.classList.add('hidden');
+    } else {
+      photoImg.removeAttribute('src');
+      photoImg.classList.add('hidden');
+      photoPlaceholder.classList.remove('hidden');
+    }
+  }
+
+  function compressImage(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error('사진을 읽지 못했습니다.'));
+      reader.onload = () => {
+        const img = new Image();
+        img.onerror = () => reject(new Error('이미지 형식이 올바르지 않습니다.'));
+        img.onload = () => {
+          const maxW = 480;
+          const maxH = 640;
+          let { width, height } = img;
+          const ratio = Math.min(maxW / width, maxH / height, 1);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, width, height);
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', 0.82));
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  photoInput.addEventListener('change', async () => {
+    const file = photoInput.files && photoInput.files[0];
+    if (!file) return;
+    try {
+      const dataUrl = await compressImage(file);
+      setPhoto(dataUrl);
+    } catch (err) {
+      alert(err.message || '사진 업로드에 실패했습니다.');
+    } finally {
+      photoInput.value = '';
+    }
+  });
 
   function setClearance(value) {
     const radios = document.querySelectorAll('input[name="clearance"]');
@@ -267,6 +335,7 @@
     phoneInput.value = v.visitor_phone || '';
     notesInput.value = v.visitor_notes || '';
     setClearance(v.visitor_clearance || '');
+    setPhoto(v.visitor_photo || '');
   }
 
   async function loadFromVisit() {
@@ -292,6 +361,7 @@
           visitor_phone: '',
           visitor_notes: '',
           visitor_clearance: '',
+          visitor_photo: '',
         });
         return;
       }
@@ -316,6 +386,7 @@
       visitor_phone: phoneInput.value.trim(),
       visitor_clearance: clearance ? clearance.value : '',
       visitor_notes: notesInput.value.trim(),
+      visitor_photo: photoDataUrl || '',
     };
 
     try {

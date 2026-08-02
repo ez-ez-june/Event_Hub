@@ -42,6 +42,7 @@ class Visit(db.Model):
     visitor_phone = db.Column(db.String(80), nullable=False, default="")
     visitor_clearance = db.Column(db.String(80), nullable=False, default="")
     visitor_notes = db.Column(db.Text, nullable=False, default="")
+    visitor_photo = db.Column(db.Text, nullable=False, default="")
     registrant_name = db.Column(db.String(120), nullable=False, default="")
     registrant_team = db.Column(db.String(120), nullable=False, default="")
     registrant_email = db.Column(db.String(200), nullable=False, default="")
@@ -70,6 +71,7 @@ class Visit(db.Model):
             "visitor_phone": self.visitor_phone,
             "visitor_clearance": self.visitor_clearance,
             "visitor_notes": self.visitor_notes,
+            "visitor_photo": self.visitor_photo,
             "registrant_name": self.registrant_name,
             "registrant_team": self.registrant_team,
             "registrant_email": self.registrant_email,
@@ -98,6 +100,24 @@ def parse_time(value: str) -> time:
 def parse_date(value: str):
     value = value.strip().replace(".", "-")
     return datetime.strptime(value, "%Y-%m-%d").date()
+
+
+def _normalize_photo(value) -> str:
+    """프로필 사진은 data URL(base64)만 허용. 과도한 크기는 거절."""
+    if value is None:
+        return ""
+    photo = str(value).strip()
+    if not photo:
+        return ""
+    if not photo.startswith("data:image/"):
+        raise ValueError("지원하지 않는 사진 형식입니다.")
+    # ~600KB raw base64 ≈ 약 450KB 이미지
+    if len(photo) > 800_000:
+        raise ValueError("사진 용량이 너무 큽니다. 더 작은 이미지를 선택하세요.")
+    return photo
+
+
+app.config["MAX_CONTENT_LENGTH"] = 2 * 1024 * 1024
 
 
 @app.after_request
@@ -203,6 +223,7 @@ def create_visit():
             visitor_phone=(data.get("visitor_phone") or "").strip(),
             visitor_clearance=(data.get("visitor_clearance") or "").strip(),
             visitor_notes=(data.get("visitor_notes") or "").replace("\r\n", "\n").strip(),
+            visitor_photo=_normalize_photo(data.get("visitor_photo")),
             registrant_name=(data.get("registrant_name") or "이름").strip(),
             registrant_team=(data.get("registrant_team") or "실").strip(),
             registrant_email=(data.get("registrant_email") or "@posco.com").strip(),
@@ -213,7 +234,7 @@ def create_visit():
             schedule_items=json.dumps(schedule_items, ensure_ascii=False),
         )
     except ValueError as exc:
-        return jsonify({"error": f"날짜/시간 형식 오류: {exc}"}), 400
+        return jsonify({"error": str(exc)}), 400
 
     db.session.add(visit)
     db.session.commit()
@@ -232,34 +253,38 @@ def update_visit(visit_id: int):
             visit.start_time = parse_time(data["start_time"])
         if "end_time" in data:
             visit.end_time = parse_time(data["end_time"])
+
+        for field in (
+            "visitor_name",
+            "visitor_company",
+            "visitor_email",
+            "visitor_phone",
+            "visitor_clearance",
+            "visitor_notes",
+            "visitor_photo",
+            "registrant_name",
+            "registrant_team",
+            "registrant_email",
+            "purpose",
+            "location",
+            "status",
+            "notes",
+        ):
+            if field in data and data[field] is not None:
+                if field == "visitor_photo":
+                    setattr(visit, field, _normalize_photo(data[field]))
+                    continue
+                value = str(data[field]).replace("\r\n", "\n")
+                if field in ("visitor_notes", "notes"):
+                    setattr(visit, field, value.strip(" \t\r\n"))
+                else:
+                    setattr(visit, field, value.strip())
+
+        if "schedule_items" in data:
+            items = data["schedule_items"] if isinstance(data["schedule_items"], list) else []
+            visit.schedule_items = json.dumps(items, ensure_ascii=False)
     except ValueError as exc:
-        return jsonify({"error": f"날짜/시간 형식 오류: {exc}"}), 400
-
-    for field in (
-        "visitor_name",
-        "visitor_company",
-        "visitor_email",
-        "visitor_phone",
-        "visitor_clearance",
-        "visitor_notes",
-        "registrant_name",
-        "registrant_team",
-        "registrant_email",
-        "purpose",
-        "location",
-        "status",
-        "notes",
-    ):
-        if field in data and data[field] is not None:
-            value = str(data[field]).replace("\r\n", "\n")
-            if field in ("visitor_notes", "notes"):
-                setattr(visit, field, value.strip(" \t\r\n"))
-            else:
-                setattr(visit, field, value.strip())
-
-    if "schedule_items" in data:
-        items = data["schedule_items"] if isinstance(data["schedule_items"], list) else []
-        visit.schedule_items = json.dumps(items, ensure_ascii=False)
+        return jsonify({"error": str(exc)}), 400
 
     db.session.commit()
     return jsonify(visit.to_dict())
@@ -372,6 +397,7 @@ def ensure_schema():
         "visitor_phone": "ALTER TABLE visits ADD COLUMN visitor_phone VARCHAR(80) NOT NULL DEFAULT ''",
         "visitor_clearance": "ALTER TABLE visits ADD COLUMN visitor_clearance VARCHAR(80) NOT NULL DEFAULT ''",
         "visitor_notes": "ALTER TABLE visits ADD COLUMN visitor_notes TEXT NOT NULL DEFAULT ''",
+        "visitor_photo": "ALTER TABLE visits ADD COLUMN visitor_photo TEXT NOT NULL DEFAULT ''",
     }
     with db.engine.begin() as conn:
         for name, sql in alterations.items():

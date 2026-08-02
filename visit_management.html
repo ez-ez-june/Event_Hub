@@ -166,22 +166,34 @@
 <span id="detail-status" class="px-2 py-1 bg-surface-container text-primary font-label-caps text-[10px] rounded uppercase">-</span>
 </div>
 </div>
+<div class="flex items-start gap-4 mb-md pb-md border-b border-surface-variant">
+  <div class="w-[72px] h-[96px] rounded-md border border-outline-variant bg-[#e8edf5] overflow-hidden shrink-0 flex items-center justify-center">
+    <img id="profile-photo" class="hidden w-full h-full object-cover" alt="방문객 사진">
+    <svg id="profile-photo-placeholder" class="w-full h-full" viewBox="0 0 96 128" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <rect width="96" height="128" fill="#e8edf5"/>
+      <circle cx="48" cy="42" r="22" fill="#b0becf"/>
+      <path d="M18 118c0-22 13.4-36 30-36s30 14 30 36" fill="#b0becf"/>
+    </svg>
+  </div>
+  <div class="flex-1 min-w-0 space-y-2">
+    <div class="flex justify-between border-b border-surface-variant pb-2">
+      <span class="text-on-surface-variant font-body-md">성명</span>
+      <span id="profile-name" class="font-bold font-body-md text-right">-</span>
+    </div>
+    <div class="flex justify-between border-b border-surface-variant pb-2">
+      <span class="text-on-surface-variant font-body-md">소속</span>
+      <span id="profile-company" class="font-bold font-body-md text-right">-</span>
+    </div>
+    <div class="flex justify-between">
+      <span class="text-on-surface-variant font-body-md">연락처</span>
+      <span id="profile-phone" class="font-bold font-body-md text-right">-</span>
+    </div>
+  </div>
+</div>
 <div class="space-y-3">
-<div class="flex justify-between border-b border-surface-variant pb-2">
-<span class="text-on-surface-variant font-body-md">성명</span>
-<span id="profile-name" class="font-bold font-body-md text-right">-</span>
-</div>
-<div class="flex justify-between border-b border-surface-variant pb-2">
-<span class="text-on-surface-variant font-body-md">소속</span>
-<span id="profile-company" class="font-bold font-body-md text-right">-</span>
-</div>
 <div class="flex justify-between border-b border-surface-variant pb-2">
 <span class="text-on-surface-variant font-body-md">이메일</span>
 <span id="profile-email" class="font-bold font-body-md text-right break-all">-</span>
-</div>
-<div class="flex justify-between border-b border-surface-variant pb-2">
-<span class="text-on-surface-variant font-body-md">연락처</span>
-<span id="profile-phone" class="font-bold font-body-md text-right">-</span>
 </div>
 <div class="flex justify-between border-b border-surface-variant pb-2">
 <span class="text-on-surface-variant font-body-md">방문지</span>
@@ -264,12 +276,24 @@
       <div id="export-datetime" style="font-size:16px;font-weight:700;color:#002b6b;">-</div>
     </div>
     <div style="background:#fff;border:1px solid #c3c6d4;border-radius:12px;padding:14px;margin-bottom:12px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-        <div style="font-size:14px;font-weight:700;color:#002b6b;">방문자 프로필</div>
-        <div id="export-clearance" style="font-size:10px;background:#d9e2ff;color:#04429a;padding:2px 8px;border-radius:999px;font-weight:700;">미설정</div>
+      <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:12px;">
+        <div style="width:64px;height:86px;border-radius:6px;border:1px solid #c3c6d4;background:#e8edf5;overflow:hidden;flex-shrink:0;">
+          <img id="export-photo" alt="" style="display:none;width:100%;height:100%;object-fit:cover;">
+          <svg id="export-photo-placeholder" viewBox="0 0 96 128" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;">
+            <rect width="96" height="128" fill="#e8edf5"/>
+            <circle cx="48" cy="42" r="22" fill="#b0becf"/>
+            <path d="M18 118c0-22 13.4-36 30-36s30 14 30 36" fill="#b0becf"/>
+          </svg>
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <div style="font-size:14px;font-weight:700;color:#002b6b;">방문자 프로필</div>
+            <div id="export-clearance" style="font-size:10px;background:#d9e2ff;color:#04429a;padding:2px 8px;border-radius:999px;font-weight:700;">미설정</div>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span style="color:#434652;font-size:12px;">성명</span><span id="export-name" style="font-weight:700;font-size:12px;">-</span></div>
+          <div style="display:flex;justify-content:space-between;"><span style="color:#434652;font-size:12px;">소속</span><span id="export-company" style="font-weight:700;font-size:12px;">-</span></div>
+        </div>
       </div>
-      <div style="display:flex;justify-content:space-between;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid #e5eeff;"><span style="color:#434652;font-size:13px;">성명</span><span id="export-name" style="font-weight:700;font-size:13px;">-</span></div>
-      <div style="display:flex;justify-content:space-between;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid #e5eeff;"><span style="color:#434652;font-size:13px;">소속</span><span id="export-company" style="font-weight:700;font-size:13px;">-</span></div>
       <div style="display:flex;justify-content:space-between;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid #e5eeff;"><span style="color:#434652;font-size:13px;">이메일</span><span id="export-email" style="font-weight:700;font-size:12px;text-align:right;max-width:60%;word-break:break-all;">-</span></div>
       <div style="display:flex;justify-content:space-between;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid #e5eeff;"><span style="color:#434652;font-size:13px;">연락처</span><span id="export-phone" style="font-weight:700;font-size:13px;">-</span></div>
       <div style="display:flex;justify-content:space-between;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid #e5eeff;"><span style="color:#434652;font-size:13px;">방문지</span><span id="export-location" style="font-weight:700;font-size:13px;">-</span></div>
@@ -312,6 +336,16 @@
       document.getElementById('profile-phone').textContent = visit.visitor_phone || '-';
       document.getElementById('profile-notes').textContent = visit.visitor_notes || '-';
       document.getElementById('detail-clearance').textContent = visit.visitor_clearance || '미설정';
+      const profilePhoto = document.getElementById('profile-photo');
+      const profilePlaceholder = document.getElementById('profile-photo-placeholder');
+      if (visit.visitor_photo) {
+        profilePhoto.src = visit.visitor_photo;
+        profilePhoto.classList.remove('hidden');
+        profilePlaceholder.classList.add('hidden');
+      } else {
+        profilePhoto.classList.add('hidden');
+        profilePlaceholder.classList.remove('hidden');
+      }
 
       const timeline = document.getElementById('detail-timeline');
       const items = visit.schedule_items || [];
@@ -359,6 +393,17 @@
       [v.registrant_name, v.registrant_team].filter(Boolean).join(' · ') || '-';
     document.getElementById('export-purpose').textContent = v.purpose || '-';
     document.getElementById('export-notes').textContent = v.visitor_notes || '-';
+    const exportPhoto = document.getElementById('export-photo');
+    const exportPlaceholder = document.getElementById('export-photo-placeholder');
+    if (v.visitor_photo) {
+      exportPhoto.src = v.visitor_photo;
+      exportPhoto.style.display = 'block';
+      exportPlaceholder.style.display = 'none';
+    } else {
+      exportPhoto.removeAttribute('src');
+      exportPhoto.style.display = 'none';
+      exportPlaceholder.style.display = 'block';
+    }
 
     const timeline = document.getElementById('export-timeline');
     const items = v.schedule_items || [];

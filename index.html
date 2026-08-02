@@ -279,12 +279,24 @@
       <div id="share-datetime" style="font-size:16px;font-weight:700;color:#002b6b;">-</div>
     </div>
     <div style="background:#fff;border:1px solid #c3c6d4;border-radius:12px;padding:14px;margin-bottom:12px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-        <div style="font-size:14px;font-weight:700;color:#002b6b;">방문자 프로필</div>
-        <div id="share-clearance" style="font-size:10px;background:#d9e2ff;color:#04429a;padding:2px 8px;border-radius:999px;font-weight:700;">미설정</div>
+      <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:12px;">
+        <div style="width:64px;height:86px;border-radius:6px;border:1px solid #c3c6d4;background:#e8edf5;overflow:hidden;flex-shrink:0;">
+          <img id="share-photo" alt="" style="display:none;width:100%;height:100%;object-fit:cover;">
+          <svg id="share-photo-placeholder" viewBox="0 0 96 128" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;">
+            <rect width="96" height="128" fill="#e8edf5"/>
+            <circle cx="48" cy="42" r="22" fill="#b0becf"/>
+            <path d="M18 118c0-22 13.4-36 30-36s30 14 30 36" fill="#b0becf"/>
+          </svg>
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <div style="font-size:14px;font-weight:700;color:#002b6b;">방문자 프로필</div>
+            <div id="share-clearance" style="font-size:10px;background:#d9e2ff;color:#04429a;padding:2px 8px;border-radius:999px;font-weight:700;">미설정</div>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span style="color:#434652;font-size:12px;">성명</span><span id="share-visitor" style="font-weight:700;font-size:12px;">-</span></div>
+          <div style="display:flex;justify-content:space-between;"><span style="color:#434652;font-size:12px;">소속</span><span id="share-company" style="font-weight:700;font-size:12px;">-</span></div>
+        </div>
       </div>
-      <div style="display:flex;justify-content:space-between;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid #e5eeff;"><span style="color:#434652;font-size:13px;">성명</span><span id="share-visitor" style="font-weight:700;font-size:13px;">-</span></div>
-      <div style="display:flex;justify-content:space-between;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid #e5eeff;"><span style="color:#434652;font-size:13px;">소속</span><span id="share-company" style="font-weight:700;font-size:13px;">-</span></div>
       <div style="display:flex;justify-content:space-between;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid #e5eeff;"><span style="color:#434652;font-size:13px;">이메일</span><span id="share-email" style="font-weight:700;font-size:12px;text-align:right;max-width:60%;word-break:break-all;">-</span></div>
       <div style="display:flex;justify-content:space-between;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid #e5eeff;"><span style="color:#434652;font-size:13px;">연락처</span><span id="share-phone" style="font-weight:700;font-size:13px;">-</span></div>
       <div style="display:flex;justify-content:space-between;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid #e5eeff;"><span style="color:#434652;font-size:13px;">방문지</span><span id="share-location" style="font-weight:700;font-size:13px;">-</span></div>
@@ -452,6 +464,17 @@
       [v.registrant_name, v.registrant_team].filter(Boolean).join(' · ') || '-';
     document.getElementById('share-purpose').textContent = v.purpose || '-';
     document.getElementById('share-notes').textContent = v.visitor_notes || '-';
+    const sharePhoto = document.getElementById('share-photo');
+    const sharePlaceholder = document.getElementById('share-photo-placeholder');
+    if (v.visitor_photo) {
+      sharePhoto.src = v.visitor_photo;
+      sharePhoto.style.display = 'block';
+      sharePlaceholder.style.display = 'none';
+    } else {
+      sharePhoto.removeAttribute('src');
+      sharePhoto.style.display = 'none';
+      sharePlaceholder.style.display = 'block';
+    }
 
     const timeline = document.getElementById('share-timeline');
     const items = v.schedule_items || [];
