@@ -5,6 +5,7 @@
 <meta content="width=device-width, initial-scale=1.0" name="viewport">
 <title>방문객 리스트 - POSCO Visit</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@600;700;800&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
 <script id="tailwind-config">
@@ -104,6 +105,44 @@
   <span class="material-symbols-outlined text-[28px]" style="font-variation-settings: 'FILL' 1;">add</span>
 </a>
 
+<!-- Offscreen profile-only card for image export -->
+<div id="profile-card-wrap" style="position:fixed;left:-9999px;top:0;z-index:-1;">
+  <div id="profile-export-card" style="width:380px;background:#f8f9ff;color:#121c28;font-family:Inter,sans-serif;padding:24px;box-sizing:border-box;">
+    <div style="font-size:11px;letter-spacing:0.08em;color:#9a4600;font-weight:700;margin-bottom:6px;">POSCO VISIT</div>
+    <div style="font-size:22px;font-weight:800;color:#002b6b;margin-bottom:16px;">방문자 프로필</div>
+    <div style="background:#fff;border:1px solid #c3c6d4;border-radius:12px;padding:16px;">
+      <div style="display:flex;gap:14px;align-items:flex-start;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid #e5eeff;">
+        <div style="width:84px;height:112px;border-radius:8px;border:1px solid #c3c6d4;background:#e8edf5;overflow:hidden;flex-shrink:0;">
+          <img id="export-photo" alt="" style="display:none;width:100%;height:100%;object-fit:cover;">
+          <svg id="export-photo-placeholder" viewBox="0 0 96 128" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;">
+            <rect width="96" height="128" fill="#e8edf5"/>
+            <circle cx="48" cy="42" r="22" fill="#b0becf"/>
+            <path d="M18 118c0-22 13.4-36 30-36s30 14 30 36" fill="#b0becf"/>
+          </svg>
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div id="export-clearance" style="display:inline-block;font-size:10px;background:#d9e2ff;color:#04429a;padding:2px 8px;border-radius:999px;font-weight:700;margin-bottom:8px;">미설정</div>
+          <div id="export-name" style="font-size:18px;font-weight:800;color:#002b6b;margin-bottom:4px;">-</div>
+          <div id="export-company" style="font-size:13px;color:#434652;font-weight:600;">-</div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #e5eeff;">
+        <span style="color:#434652;font-size:13px;">이메일</span>
+        <span id="export-email" style="font-weight:700;font-size:12px;text-align:right;max-width:62%;word-break:break-all;">-</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #e5eeff;">
+        <span style="color:#434652;font-size:13px;">연락처</span>
+        <span id="export-phone" style="font-weight:700;font-size:13px;">-</span>
+      </div>
+      <div>
+        <div style="color:#434652;font-size:13px;margin-bottom:6px;">주요 경력</div>
+        <div id="export-notes" style="font-size:13px;font-weight:600;white-space:pre-wrap;word-break:break-word;line-height:1.45;">-</div>
+      </div>
+    </div>
+    <div style="margin-top:14px;font-size:10px;color:#737783;">POSCO 방문객 프로필</div>
+  </div>
+</div>
+
 <script>
 (() => {
   const listEl = document.getElementById('visitor-list');
@@ -115,6 +154,8 @@
 
   let searchOpen = false;
   let debounceTimer = null;
+  let visitors = [];
+  let saving = false;
 
   function photoBlock(photo) {
     if (photo) {
@@ -135,14 +176,81 @@
       .replace(/"/g, '&quot;');
   }
 
+  function fillProfileCard(v) {
+    document.getElementById('export-name').textContent = v.visitor_name || '-';
+    document.getElementById('export-company').textContent = v.visitor_company || '-';
+    document.getElementById('export-email').textContent = v.visitor_email || '-';
+    document.getElementById('export-phone').textContent = v.visitor_phone || '-';
+    document.getElementById('export-clearance').textContent = v.visitor_clearance || '미설정';
+    document.getElementById('export-notes').textContent = v.visitor_notes || '-';
+
+    const photo = document.getElementById('export-photo');
+    const placeholder = document.getElementById('export-photo-placeholder');
+    if (v.visitor_photo) {
+      photo.src = v.visitor_photo;
+      photo.style.display = 'block';
+      placeholder.style.display = 'none';
+    } else {
+      photo.removeAttribute('src');
+      photo.style.display = 'none';
+      placeholder.style.display = 'block';
+    }
+  }
+
+  async function saveProfileImage(v) {
+    if (saving) return;
+    if (typeof html2canvas !== 'function') {
+      alert('이미지 저장 기능을 불러오지 못했습니다. 새로고침 후 다시 시도해 주세요.');
+      return;
+    }
+    saving = true;
+    try {
+      fillProfileCard(v);
+      // data URL 사진이 카드에 반영될 시간을 짧게 줌
+      await new Promise((r) => setTimeout(r, 50));
+      const target = document.getElementById('profile-export-card');
+      const canvas = await html2canvas(target, {
+        backgroundColor: '#f8f9ff',
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        width: target.scrollWidth,
+        height: target.scrollHeight,
+        windowWidth: target.scrollWidth,
+        windowHeight: target.scrollHeight,
+      });
+      const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+      if (!blob) throw new Error('이미지 생성에 실패했습니다.');
+
+      const safeName = (v.visitor_name || 'visitor').replace(/[\\/:*?"<>|]/g, '_');
+      const fileName = `visitor-profile-${safeName}.png`;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1500);
+
+      alert(`방문자 프로필 이미지가 휴대폰에 저장되었습니다.\n(${v.visitor_name || '방문객'})`);
+    } catch (err) {
+      console.error(err);
+      alert(err.message || '프로필 이미지 저장 중 오류가 발생했습니다.');
+    } finally {
+      saving = false;
+    }
+  }
+
   function renderItems(items) {
+    visitors = items;
     countEl.textContent = `Total ${items.length}`;
     if (!items.length) {
       listEl.innerHTML = `<div class="py-12 text-center text-on-surface-variant border border-dashed border-outline-variant rounded-xl bg-surface-container-lowest">등록된 방문객이 없습니다.</div>`;
       return;
     }
-    listEl.innerHTML = items.map((v) => `
-      <a href="/visit_management.html?id=${encodeURIComponent(v.visit_id)}" class="block bg-surface-container-lowest border border-outline-variant rounded-xl p-3 hover:border-primary/30 hover:shadow-sm transition-all">
+    listEl.innerHTML = items.map((v, idx) => `
+      <button type="button" class="visitor-item w-full text-left block bg-surface-container-lowest border border-outline-variant rounded-xl p-3 hover:border-primary/30 hover:shadow-sm active:scale-[0.99] transition-all" data-idx="${idx}">
         <div class="flex gap-3 items-start">
           <div class="w-14 h-[74px] rounded-md border border-outline-variant overflow-hidden bg-[#e8edf5] shrink-0">
             ${photoBlock(v.visitor_photo)}
@@ -157,12 +265,20 @@
             </div>
             <div class="mt-2 text-[12px] text-on-surface-variant space-y-0.5">
               <div class="truncate">${escapeHtml(v.visitor_phone || '연락처 없음')} · ${escapeHtml(v.visitor_email || '이메일 없음')}</div>
-              <div class="truncate">최근 방문 ${escapeHtml(v.visit_date || '-')} · ${escapeHtml(v.location || '-')}</div>
+              <div class="truncate text-primary/80 font-medium">탭하여 프로필 이미지 저장</div>
             </div>
           </div>
         </div>
-      </a>
+      </button>
     `).join('');
+
+    listEl.querySelectorAll('.visitor-item').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const idx = Number(btn.getAttribute('data-idx'));
+        const visitor = visitors[idx];
+        if (visitor) saveProfileImage(visitor);
+      });
+    });
   }
 
   async function loadVisitors(q = '') {
