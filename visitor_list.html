@@ -160,8 +160,9 @@
       <img id="save-preview-img" alt="방문자 프로필" class="w-full rounded-xl border border-outline-variant bg-white select-none" style="-webkit-touch-callout:default; touch-action:manipulation;">
     </div>
     <div class="p-4 border-t border-outline-variant space-y-2">
-      <p id="save-preview-hint" class="text-[12px] text-center text-on-surface-variant leading-relaxed">카카오톡에서는 자동 다운로드가 되지 않습니다.<br>위 사진을 길게 누른 뒤 「이미지 저장」을 선택해 주세요.</p>
-      <button type="button" id="save-preview-download" class="hidden w-full h-11 rounded-xl bg-primary text-on-primary font-semibold text-sm">다시 다운로드 시도</button>
+      <p id="save-preview-hint" class="text-[12px] text-center text-on-surface-variant leading-relaxed">아래 버튼을 누르거나, 사진을 길게 눌러 저장하세요.</p>
+      <a id="save-preview-open" href="#" target="_blank" rel="noopener" class="flex items-center justify-center w-full h-11 rounded-xl bg-primary text-on-primary font-semibold text-sm">이미지 저장하기</a>
+      <button type="button" id="save-preview-download" class="hidden w-full h-11 rounded-xl border border-outline-variant text-on-surface font-semibold text-sm">다시 다운로드 시도</button>
     </div>
   </div>
 </div>
@@ -183,6 +184,7 @@
 
   const saveModal = document.getElementById('save-preview-modal');
   const savePreviewImg = document.getElementById('save-preview-img');
+  const savePreviewOpen = document.getElementById('save-preview-open');
   const savePreviewDownloadBtn = document.getElementById('save-preview-download');
   const savePreviewHint = document.getElementById('save-preview-hint');
 
@@ -193,6 +195,27 @@
   function isRestrictedInApp() {
     const ua = navigator.userAgent || '';
     return /KAKAOTALK|Instagram|FBAN|FBAV|Line\//i.test(ua);
+  }
+
+  function blobToDataUrl(blob) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error('이미지 변환에 실패했습니다.'));
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  async function uploadProfileImage(blob) {
+    const dataUrl = await blobToDataUrl(blob);
+    const res = await fetch('/api/share-images', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: dataUrl }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || '이미지 업로드에 실패했습니다.');
+    return data;
   }
 
   function photoBlock(photo) {
@@ -265,29 +288,67 @@
       previewObjectUrl = null;
     }
     savePreviewImg.removeAttribute('src');
+    savePreviewOpen.href = '#';
+    savePreviewOpen.onclick = null;
     savePreviewDownloadBtn.classList.add('hidden');
     savePreviewDownloadBtn.onclick = null;
   }
 
-  function openSavePreview(blob, fileName, visitorName) {
-    if (previewObjectUrl) URL.revokeObjectURL(previewObjectUrl);
-    previewObjectUrl = URL.createObjectURL(blob);
-    savePreviewImg.src = previewObjectUrl;
-    savePreviewHint.innerHTML = isKakaoInApp()
-      ? '카카오톡에서는 자동 다운로드가 되지 않습니다.<br>위 사진을 <strong>길게 누른 뒤 「이미지 저장」</strong>을 선택해 주세요.'
-      : '위 사진을 <strong>길게 누른 뒤 「이미지 저장」</strong>을 선택해 주세요.';
-    // 일반 브라우저용 보조 버튼
-    if (!isRestrictedInApp()) {
-      savePreviewDownloadBtn.classList.remove('hidden');
-      savePreviewDownloadBtn.onclick = () => {
-        triggerDownload(blob, fileName);
-        alert(`방문자 프로필 이미지가 휴대폰에 저장되었습니다.\n(${visitorName || '방문객'})`);
-      };
-    } else {
-      savePreviewDownloadBtn.classList.add('hidden');
+  function openSavePreview({ imageUrl, downloadUrl, blob, fileName, visitorName }) {
+    if (previewObjectUrl) {
+      URL.revokeObjectURL(previewObjectUrl);
+      previewObjectUrl = null;
     }
+
+    // 카카오톡은 blob 이미지 저장이 실패함 → 반드시 https URL 사용
+    if (imageUrl) {
+      savePreviewImg.src = imageUrl;
+    } else {
+      previewObjectUrl = URL.createObjectURL(blob);
+      savePreviewImg.src = previewObjectUrl;
+    }
+
+    const openUrl = downloadUrl || imageUrl || previewObjectUrl;
+    savePreviewOpen.href = openUrl || '#';
+    savePreviewOpen.removeAttribute('download');
+    if (downloadUrl || imageUrl) {
+      savePreviewOpen.setAttribute('download', fileName || 'visitor-profile.png');
+    }
+
+    savePreviewOpen.onclick = (e) => {
+      // 카카오톡: blob 불가 → 실제 URL로 이동 (iOS는 보기 URL 길게 저장, Android는 첨부 다운로드)
+      if (isKakaoInApp() && (downloadUrl || imageUrl)) {
+        e.preventDefault();
+        const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+        window.location.href = isIOS && imageUrl ? imageUrl : (downloadUrl || imageUrl);
+        return;
+      }
+      alert(`방문자 프로필 이미지가 휴대폰에 저장되었습니다.\n(${visitorName || '방문객'})`);
+    };
+
+    if (isKakaoInApp()) {
+      savePreviewHint.innerHTML =
+        '카카오톡에서는 <strong>「이미지 저장하기」</strong>를 누르거나,<br>위 사진(서버 이미지)을 <strong>길게 눌러 저장</strong>하세요.';
+      savePreviewDownloadBtn.classList.add('hidden');
+    } else {
+      savePreviewHint.innerHTML = '「이미지 저장하기」를 누르거나 사진을 길게 눌러 저장하세요.';
+      if (blob) {
+        savePreviewDownloadBtn.classList.remove('hidden');
+        savePreviewDownloadBtn.onclick = () => {
+          triggerDownload(blob, fileName);
+          alert(`방문자 프로필 이미지가 휴대폰에 저장되었습니다.\n(${visitorName || '방문객'})`);
+        };
+      } else {
+        savePreviewDownloadBtn.classList.add('hidden');
+      }
+    }
+
     saveModal.classList.remove('hidden');
-    alert(`프로필 이미지가 준비되었습니다.\n(${visitorName || '방문객'})\n\n사진을 길게 눌러 「이미지 저장」을 선택해 주세요.`);
+    alert(
+      isKakaoInApp()
+        ? `프로필 이미지가 준비되었습니다.\n(${visitorName || '방문객'})\n\n「이미지 저장하기」를 누르거나 사진을 길게 눌러 저장해 주세요.`
+        : `방문자 프로필 이미지가 휴대폰에 저장되었습니다.\n(${visitorName || '방문객'})`
+    );
   }
 
   async function saveProfileImage(v) {
@@ -318,9 +379,16 @@
       const fileName = `visitor-profile-${safeName}.png`;
       const file = new File([blob], fileName, { type: 'image/png' });
 
-      // 카카오톡 등 인앱: download 불가 → 길게 눌러 저장
+      // 카카오톡 등 인앱: 서버 HTTPS 이미지로 저장 (blob 저장 시 "저장에 실패하였습니다")
       if (isRestrictedInApp()) {
-        openSavePreview(blob, fileName, v.visitor_name);
+        const uploaded = await uploadProfileImage(blob);
+        openSavePreview({
+          imageUrl: uploaded.url,
+          downloadUrl: uploaded.download_url,
+          blob,
+          fileName,
+          visitorName: v.visitor_name,
+        });
         return;
       }
 
@@ -342,7 +410,18 @@
         alert(`방문자 프로필 이미지가 휴대폰에 저장되었습니다.\n(${v.visitor_name || '방문객'})`);
       } catch (dlErr) {
         console.warn(dlErr);
-        openSavePreview(blob, fileName, v.visitor_name);
+        try {
+          const uploaded = await uploadProfileImage(blob);
+          openSavePreview({
+            imageUrl: uploaded.url,
+            downloadUrl: uploaded.download_url,
+            blob,
+            fileName,
+            visitorName: v.visitor_name,
+          });
+        } catch (uploadErr) {
+          openSavePreview({ blob, fileName, visitorName: v.visitor_name });
+        }
       }
     } catch (err) {
       console.error(err);

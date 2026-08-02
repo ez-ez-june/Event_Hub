@@ -252,7 +252,7 @@ def create_share_image():
     except Exception:
         return jsonify({"error": "이미지 디코딩에 실패했습니다."}), 400
 
-    if len(binary) > 2_500_000:
+    if len(binary) > 4_000_000:
         return jsonify({"error": "이미지 용량이 너무 큽니다."}), 400
 
     # 오래된 공유 이미지 정리 (24시간)
@@ -275,7 +275,25 @@ def create_share_image():
 
     origin = (os.environ.get("PUBLIC_ORIGIN") or request.url_root).rstrip("/")
     url = f"{origin}/static/share/{filename}"
-    return jsonify({"url": url, "filename": filename}), 201
+    download_url = f"{origin}/api/share-images/{filename}/download"
+    return jsonify({"url": url, "download_url": download_url, "filename": filename}), 201
+
+
+@app.get("/api/share-images/<filename>/download")
+def download_share_image(filename):
+    """카카오톡 인앱 등에서 blob 저장이 막힐 때 HTTP 첨부로 저장 유도."""
+    if not re.match(r"^[a-f0-9]{16,64}\.(png|jpg|jpeg)$", filename, re.I):
+        return jsonify({"error": "잘못된 파일명입니다."}), 400
+    path = SHARE_DIR / filename
+    if not path.is_file():
+        return jsonify({"error": "이미지를 찾을 수 없습니다."}), 404
+    return send_from_directory(
+        SHARE_DIR,
+        filename,
+        as_attachment=True,
+        download_name=filename,
+        mimetype="image/png" if filename.lower().endswith(".png") else "image/jpeg",
+    )
 
 
 @app.get("/api/visits")
