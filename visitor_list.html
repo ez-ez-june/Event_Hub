@@ -143,6 +143,29 @@
   </div>
 </div>
 
+<!-- Kakao/in-app: long-press save preview -->
+<div id="save-preview-modal" class="fixed inset-0 z-[70] hidden">
+  <div class="absolute inset-0 bg-black/55" id="save-preview-backdrop"></div>
+  <div class="relative z-10 flex flex-col max-h-[92vh] w-full max-w-md mx-auto mt-[4vh] bg-surface-container-lowest rounded-t-2xl md:rounded-2xl overflow-hidden shadow-xl">
+    <div class="flex items-center justify-between px-4 py-3 border-b border-outline-variant">
+      <div>
+        <p class="font-semibold text-[15px] text-primary">프로필 이미지 저장</p>
+        <p class="text-[12px] text-on-surface-variant mt-0.5">이미지를 <strong>길게 눌러</strong> 저장하세요</p>
+      </div>
+      <button type="button" id="save-preview-close" class="w-9 h-9 rounded-full hover:bg-surface-container-low flex items-center justify-center" aria-label="닫기">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div class="overflow-y-auto p-4 bg-surface-container-low">
+      <img id="save-preview-img" alt="방문자 프로필" class="w-full rounded-xl border border-outline-variant bg-white select-none" style="-webkit-touch-callout:default; touch-action:manipulation;">
+    </div>
+    <div class="p-4 border-t border-outline-variant space-y-2">
+      <p id="save-preview-hint" class="text-[12px] text-center text-on-surface-variant leading-relaxed">카카오톡에서는 자동 다운로드가 되지 않습니다.<br>위 사진을 길게 누른 뒤 「이미지 저장」을 선택해 주세요.</p>
+      <button type="button" id="save-preview-download" class="hidden w-full h-11 rounded-xl bg-primary text-on-primary font-semibold text-sm">다시 다운로드 시도</button>
+    </div>
+  </div>
+</div>
+
 <script>
 (() => {
   const listEl = document.getElementById('visitor-list');
@@ -156,6 +179,21 @@
   let debounceTimer = null;
   let visitors = [];
   let saving = false;
+  let previewObjectUrl = null;
+
+  const saveModal = document.getElementById('save-preview-modal');
+  const savePreviewImg = document.getElementById('save-preview-img');
+  const savePreviewDownloadBtn = document.getElementById('save-preview-download');
+  const savePreviewHint = document.getElementById('save-preview-hint');
+
+  function isKakaoInApp() {
+    return /KAKAOTALK/i.test(navigator.userAgent || '');
+  }
+
+  function isRestrictedInApp() {
+    const ua = navigator.userAgent || '';
+    return /KAKAOTALK|Instagram|FBAN|FBAV|Line\//i.test(ua);
+  }
 
   function photoBlock(photo) {
     if (photo) {
@@ -197,6 +235,61 @@
     }
   }
 
+  function waitForExportPhoto() {
+    const photo = document.getElementById('export-photo');
+    if (photo.style.display === 'none' || !photo.src) return Promise.resolve();
+    if (photo.complete && photo.naturalWidth > 0) return Promise.resolve();
+    return new Promise((resolve) => {
+      const done = () => resolve();
+      photo.onload = done;
+      photo.onerror = done;
+      setTimeout(done, 800);
+    });
+  }
+
+  function triggerDownload(blob, fileName) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  }
+
+  function closeSavePreview() {
+    saveModal.classList.add('hidden');
+    if (previewObjectUrl) {
+      URL.revokeObjectURL(previewObjectUrl);
+      previewObjectUrl = null;
+    }
+    savePreviewImg.removeAttribute('src');
+    savePreviewDownloadBtn.classList.add('hidden');
+    savePreviewDownloadBtn.onclick = null;
+  }
+
+  function openSavePreview(blob, fileName, visitorName) {
+    if (previewObjectUrl) URL.revokeObjectURL(previewObjectUrl);
+    previewObjectUrl = URL.createObjectURL(blob);
+    savePreviewImg.src = previewObjectUrl;
+    savePreviewHint.innerHTML = isKakaoInApp()
+      ? '카카오톡에서는 자동 다운로드가 되지 않습니다.<br>위 사진을 <strong>길게 누른 뒤 「이미지 저장」</strong>을 선택해 주세요.'
+      : '위 사진을 <strong>길게 누른 뒤 「이미지 저장」</strong>을 선택해 주세요.';
+    // 일반 브라우저용 보조 버튼
+    if (!isRestrictedInApp()) {
+      savePreviewDownloadBtn.classList.remove('hidden');
+      savePreviewDownloadBtn.onclick = () => {
+        triggerDownload(blob, fileName);
+        alert(`방문자 프로필 이미지가 휴대폰에 저장되었습니다.\n(${visitorName || '방문객'})`);
+      };
+    } else {
+      savePreviewDownloadBtn.classList.add('hidden');
+    }
+    saveModal.classList.remove('hidden');
+    alert(`프로필 이미지가 준비되었습니다.\n(${visitorName || '방문객'})\n\n사진을 길게 눌러 「이미지 저장」을 선택해 주세요.`);
+  }
+
   async function saveProfileImage(v) {
     if (saving) return;
     if (typeof html2canvas !== 'function') {
@@ -206,8 +299,7 @@
     saving = true;
     try {
       fillProfileCard(v);
-      // data URL 사진이 카드에 반영될 시간을 짧게 줌
-      await new Promise((r) => setTimeout(r, 50));
+      await waitForExportPhoto();
       const target = document.getElementById('profile-export-card');
       const canvas = await html2canvas(target, {
         backgroundColor: '#f8f9ff',
@@ -224,16 +316,34 @@
 
       const safeName = (v.visitor_name || 'visitor').replace(/[\\/:*?"<>|]/g, '_');
       const fileName = `visitor-profile-${safeName}.png`;
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 1500);
+      const file = new File([blob], fileName, { type: 'image/png' });
 
-      alert(`방문자 프로필 이미지가 휴대폰에 저장되었습니다.\n(${v.visitor_name || '방문객'})`);
+      // 카카오톡 등 인앱: download 불가 → 길게 눌러 저장
+      if (isRestrictedInApp()) {
+        openSavePreview(blob, fileName, v.visitor_name);
+        return;
+      }
+
+      // 모바일 브라우저: 공유 시트로 사진 앱에 저장 유도
+      const shareData = { files: [file], title: '방문자 프로필' };
+      if (navigator.canShare && navigator.canShare(shareData)) {
+        try {
+          await navigator.share(shareData);
+          alert(`방문자 프로필 이미지가 휴대폰에 저장되었습니다.\n(${v.visitor_name || '방문객'})`);
+          return;
+        } catch (shareErr) {
+          if (shareErr && shareErr.name === 'AbortError') return;
+        }
+      }
+
+      // 일반 브라우저 다운로드
+      try {
+        triggerDownload(blob, fileName);
+        alert(`방문자 프로필 이미지가 휴대폰에 저장되었습니다.\n(${v.visitor_name || '방문객'})`);
+      } catch (dlErr) {
+        console.warn(dlErr);
+        openSavePreview(blob, fileName, v.visitor_name);
+      }
     } catch (err) {
       console.error(err);
       alert(err.message || '프로필 이미지 저장 중 오류가 발생했습니다.');
@@ -241,6 +351,9 @@
       saving = false;
     }
   }
+
+  document.getElementById('save-preview-close').addEventListener('click', closeSavePreview);
+  document.getElementById('save-preview-backdrop').addEventListener('click', closeSavePreview);
 
   function renderItems(items) {
     visitors = items;
