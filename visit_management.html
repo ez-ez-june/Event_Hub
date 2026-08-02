@@ -424,71 +424,21 @@
     `;
   }
 
-  async function ensureKakaoReady() {
-    if (typeof Kakao === 'undefined') return false;
-    if (Kakao.isInitialized()) return true;
-    try {
-      const res = await fetch('/api/config');
-      const cfg = await res.json();
-      const key = (cfg.kakao_js_key || '').trim();
-      if (!key) return false;
-      Kakao.init(key);
-      return Kakao.isInitialized();
-    } catch (err) {
-      console.error(err);
-      return false;
+  async function shareImageFile() {
+    if (!shareFile) throw new Error('공유할 이미지가 없습니다.');
+    const fileOnly = { files: [shareFile], title: '공식 방문 일정표' };
+    if (navigator.canShare && navigator.canShare(fileOnly)) {
+      await navigator.share(fileOnly);
+      return true;
     }
-  }
-
-  async function uploadShareImage() {
-    if (!shareBlob) throw new Error('공유할 이미지가 없습니다.');
-    const dataUrl = await new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = () => reject(new Error('이미지 변환 실패'));
-      reader.readAsDataURL(shareBlob);
-    });
-    const res = await fetch('/api/share-images', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ image: dataUrl }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || '이미지 업로드 실패');
-    return data.url;
-  }
-
-  async function shareWithKakao() {
-    const ready = await ensureKakaoReady();
-    if (!ready) {
-      throw new Error('카카오 공유 설정이 아직 없습니다. JavaScript 키를 등록해 주세요.');
+    const withText = { files: [shareFile], title: '공식 방문 일정표', text: shareText || '공식 방문 일정표' };
+    if (navigator.canShare && navigator.canShare(withText)) {
+      await navigator.share(withText);
+      return true;
     }
-    const imageUrl = await uploadShareImage();
-    const pageUrl = id
-      ? `${window.location.origin}/visit_management.html?id=${encodeURIComponent(id)}`
-      : `${window.location.origin}/`;
-    Kakao.Share.sendDefault({
-      objectType: 'feed',
-      content: {
-        title: 'POSCO 방문 일정표',
-        description: shareText,
-        imageUrl,
-        link: {
-          mobileWebUrl: pageUrl,
-          webUrl: pageUrl,
-        },
-      },
-      buttons: [
-        {
-          title: '일정 확인하기',
-          link: {
-            mobileWebUrl: pageUrl,
-            webUrl: pageUrl,
-          },
-        },
-      ],
-    });
-    return true;
+    downloadShareImage();
+    alert('일정표 이미지가 저장되었습니다.\n카카오톡 채팅방에서 + 또는 사진 첨부로 보내주세요.');
+    return false;
   }
 
   function downloadShareImage() {
@@ -503,18 +453,14 @@
 
   async function shareWithSystem(fallbackMsg) {
     if (!shareFile) return false;
-    const data = { files: [shareFile], title: '공식 방문 일정표', text: shareText };
-    if (navigator.canShare && navigator.canShare(data)) {
-      await navigator.share(data);
-      return true;
+    try {
+      return await shareImageFile();
+    } catch (err) {
+      if (err && err.name === 'AbortError') throw err;
+      downloadShareImage();
+      alert(fallbackMsg || '이미지가 저장되었습니다. 카카오톡/SMS에서 사진을 첨부해 보내주세요.');
+      return false;
     }
-    if (navigator.share) {
-      await navigator.share({ title: data.title, text: `${shareText}\n\n(이미지는 저장 후 첨부하세요)` });
-      return true;
-    }
-    downloadShareImage();
-    alert(fallbackMsg || '이미지가 저장되었습니다. 카카오톡/SMS에서 사진을 첨부해 보내주세요.');
-    return false;
   }
 
   async function createScheduleImage() {
@@ -582,19 +528,12 @@
   });
   document.getElementById('share-kakao-btn').addEventListener('click', async () => {
     try {
-      await shareWithKakao();
-      shareModal.classList.add('hidden');
-      return;
-    } catch (kakaoErr) {
-      console.warn('Kakao share fallback:', kakaoErr);
-    }
-    try {
-      const ok = await shareWithSystem('이미지가 저장되었습니다. 카카오톡에서 사진을 첨부해 보내주세요.');
+      const ok = await shareImageFile();
       if (ok) shareModal.classList.add('hidden');
     } catch (err) {
       if (err && err.name === 'AbortError') return;
       downloadShareImage();
-      alert('이미지가 저장되었습니다. 카카오톡에서 사진을 첨부해 보내주세요.');
+      alert('일정표 이미지가 저장되었습니다.\n카카오톡 채팅방에서 사진을 첨부해 보내주세요.');
     }
   });
   document.getElementById('share-sms-btn').addEventListener('click', async () => {
