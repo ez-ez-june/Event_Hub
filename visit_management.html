@@ -1,0 +1,500 @@
+<!DOCTYPE html><html class="light" lang="ko" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>방문 일정 상세</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@600;700;800&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-surface": "#121c28",
+                        "on-primary": "#ffffff",
+                        "surface-bright": "#f8f9ff",
+                        "secondary-fixed": "#ffdbc9",
+                        "background": "#f8f9ff",
+                        "primary-fixed-dim": "#b0c6ff",
+                        "inverse-surface": "#27313e",
+                        "outline": "#737783",
+                        "tertiary-fixed-dim": "#ffb599",
+                        "on-error-container": "#93000a",
+                        "on-tertiary": "#ffffff",
+                        "on-background": "#121c28",
+                        "surface": "#f8f9ff",
+                        "secondary-fixed-dim": "#ffb68c",
+                        "secondary-container": "#fd8a3d",
+                        "on-tertiary-container": "#ff986e",
+                        "surface-container-low": "#eef4ff",
+                        "on-secondary-fixed": "#321200",
+                        "primary-fixed": "#d9e2ff",
+                        "surface-variant": "#d9e3f4",
+                        "surface-container-highest": "#d9e3f4",
+                        "error-container": "#ffdad6",
+                        "on-tertiary-fixed": "#370e00",
+                        "tertiary": "#571b00",
+                        "on-primary-fixed": "#001945",
+                        "surface-dim": "#d1dbec",
+                        "on-error": "#ffffff",
+                        "outline-variant": "#c3c6d4",
+                        "on-tertiary-fixed-variant": "#7e2c01",
+                        "error": "#ba1a1a",
+                        "inverse-primary": "#b0c6ff",
+                        "tertiary-container": "#7c2a00",
+                        "secondary": "#9a4600",
+                        "on-secondary-fixed-variant": "#753400",
+                        "on-primary-fixed-variant": "#04429a",
+                        "on-secondary-container": "#672c00",
+                        "on-primary-container": "#91b1ff",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container": "#e5eeff",
+                        "primary": "#002b6b",
+                        "inverse-on-surface": "#eaf1ff",
+                        "tertiary-fixed": "#ffdbce",
+                        "surface-container-high": "#dfe9fa",
+                        "surface-tint": "#2d5bb3",
+                        "on-surface-variant": "#434652",
+                        "on-secondary": "#ffffff",
+                        "primary-container": "#004098"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "margin-mobile": "20px",
+                        "gutter": "16px",
+                        "base": "4px",
+                        "lg": "24px",
+                        "md": "16px",
+                        "xs": "4px",
+                        "sm": "8px",
+                        "xl": "32px",
+                        "margin-desktop": "40px"
+                    },
+                    "fontFamily": {
+                        "headline-sm": ["Plus Jakarta Sans"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "body-md": ["Inter"],
+                        "label-caps": ["JetBrains Mono"],
+                        "body-lg": ["Inter"],
+                        "headline-lg-mobile": ["Plus Jakarta Sans"],
+                        "headline-lg": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "headline-sm": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                        "headline-lg": ["30px", {"lineHeight": "38px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .export-canvas {
+            background: linear-gradient(135deg, #f8f9ff 0%, #ffffff 100%);
+        }
+        .timeline-line {
+            position: absolute;
+            left: 11px;
+            top: 24px;
+            bottom: -8px;
+            width: 2px;
+            background-color: #e5eeff;
+        }
+        .timeline-dot {
+            position: absolute;
+            left: 6px;
+            top: 4px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: #002b6b;
+            border: 2px solid #ffffff;
+            z-index: 10;
+        }
+        @media print {
+            .no-export { display: none; }
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-md antialiased min-h-screen flex flex-col items-center">
+<!-- Top AppBar (JSON Mapping: Visit Management) -->
+<header class="w-full top-0 sticky bg-surface-container-lowest border-b border-outline-variant flex items-center justify-between px-margin-mobile py-sm z-40">
+<div class="flex items-center gap-4">
+<a href="/" class="material-symbols-outlined text-primary">arrow_back</a>
+<h1 class="font-headline-md text-headline-md font-bold text-primary">방문 일정 상세</h1>
+</div>
+</header>
+<!-- Main Content Area: Exportable Canvas -->
+<main class="w-full max-w-md mx-auto export-canvas px-margin-mobile py-xl flex-grow mb-24" id="capture-area">
+<!-- Header Section -->
+<section class="mb-xl">
+<div class="flex flex-col gap-1">
+<span class="font-label-caps text-label-caps text-secondary font-bold">FINAL SCHEDULE</span>
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-primary">공식 방문 일정표</h2>
+<div class="mt-md flex items-center gap-3 p-md bg-surface-container-low rounded-xl border border-outline-variant">
+<div class="p-2 bg-primary-container rounded-lg">
+<span class="material-symbols-outlined text-on-primary">calendar_today</span>
+</div>
+<div>
+<p class="font-label-caps text-label-caps text-on-surface-variant">일시</p>
+<p id="detail-datetime" class="font-body-lg text-body-lg font-bold text-primary">불러오는 중...</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Visitor Info + Profile Card -->
+<section class="mb-xl bg-surface-container-lowest border border-outline-variant rounded-xl p-md shadow-sm">
+<div class="flex items-center justify-between mb-md">
+<h3 class="font-headline-sm text-headline-sm text-primary">방문자 정보 · 프로필</h3>
+<div class="flex items-center gap-2">
+<span id="detail-clearance" class="px-2 py-1 bg-primary-fixed text-on-primary-fixed-variant font-label-caps text-[10px] rounded uppercase">미설정</span>
+<span id="detail-status" class="px-2 py-1 bg-surface-container text-primary font-label-caps text-[10px] rounded uppercase">-</span>
+</div>
+</div>
+<div class="space-y-3">
+<div class="flex justify-between border-b border-surface-variant pb-2">
+<span class="text-on-surface-variant font-body-md">성명</span>
+<span id="profile-name" class="font-bold font-body-md text-right">-</span>
+</div>
+<div class="flex justify-between border-b border-surface-variant pb-2">
+<span class="text-on-surface-variant font-body-md">소속</span>
+<span id="profile-company" class="font-bold font-body-md text-right">-</span>
+</div>
+<div class="flex justify-between border-b border-surface-variant pb-2">
+<span class="text-on-surface-variant font-body-md">이메일</span>
+<span id="profile-email" class="font-bold font-body-md text-right break-all">-</span>
+</div>
+<div class="flex justify-between border-b border-surface-variant pb-2">
+<span class="text-on-surface-variant font-body-md">연락처</span>
+<span id="profile-phone" class="font-bold font-body-md text-right">-</span>
+</div>
+<div class="flex justify-between border-b border-surface-variant pb-2">
+<span class="text-on-surface-variant font-body-md">방문지</span>
+<span id="detail-location" class="font-bold font-body-md">-</span>
+</div>
+<div class="flex justify-between border-b border-surface-variant pb-2">
+<span class="text-on-surface-variant font-body-md">등록자</span>
+<span id="detail-registrant" class="font-bold font-body-md text-right">-</span>
+</div>
+<div class="flex justify-between border-b border-surface-variant pb-2">
+<span class="text-on-surface-variant font-body-md">방문 목적</span>
+<span id="detail-purpose" class="font-bold font-body-md text-right">-</span>
+</div>
+<div class="flex flex-col gap-1">
+<span class="text-on-surface-variant font-body-md">특이사항</span>
+<p id="profile-notes" class="font-body-md text-on-surface whitespace-pre-wrap break-words">-</p>
+</div>
+</div>
+</section>
+<!-- Chronological Timeline -->
+<section class="space-y-6">
+<h3 class="font-headline-sm text-headline-sm text-primary px-1">타임라인</h3>
+<div id="detail-timeline" class="space-y-0 relative">
+<p class="text-on-surface-variant font-body-md pl-1">세부 일정이 없습니다.</p>
+</div>
+</section>
+<!-- Signature/Footer Area for Image Export -->
+<footer class="mt-xl pt-xl border-t border-outline-variant flex justify-between items-end">
+<div class="flex flex-col gap-1">
+<p class="font-label-caps text-[10px] text-on-surface-variant">Powered by Easyhoon</p>
+<p class="font-label-caps text-[10px] text-on-surface-variant">Date: 2024-10-24</p>
+</div>
+<div class="opacity-30 h-8 w-24">
+<img class="h-full object-contain" data-alt="A minimalist vector logo for a corporate visit management system, featuring sleek abstract geometric lines in deep POSCO blue and light silver, isolated on a white background, symbolizing professional excellence and stability." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDB6BJlazwSveY3UIiIlTVAJF5FjezqUH95XBNisXzXKcmTtJZODKI3lA-01RMDiUsS__bvuqo1f2scSsfluUHvzPkAiLpJ8dbvTes-UODfYUPnJJ4qlBn4jOw75aUEhbiWvJDW_9mAN2Ipr0hoTDXVqbR8J-syXI92Cqeq8BBW6VRdWhZ16piW6F4GrVrtG1QBJMZ89zlWb8WV1Aju7rXnSo0UaniSoHUO3lqHbsKnspxUAwjPegw">
+</div>
+</footer>
+</main>
+<!-- Bottom Action Bar (Non-exportable) -->
+<div class="no-export fixed bottom-0 left-0 w-full z-50 bg-surface-container-lowest border-t border-outline-variant px-4 py-4 flex flex-col shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
+<div class="flex gap-3 w-full">
+  <button type="button" id="profile-edit-btn" class="flex-1 bg-surface-container text-primary font-bold py-4 rounded-xl flex flex-col items-center justify-center gap-1 active:scale-[0.98] transition-transform">
+    <span class="material-symbols-outlined">edit</span>
+    <span class="text-[10px]">프로필 수정</span>
+  </button>
+  <button type="button" id="schedule-edit-btn" class="flex-1 bg-surface-container text-primary font-bold py-4 rounded-xl flex flex-col items-center justify-center gap-1 active:scale-[0.98] transition-transform">
+    <span class="material-symbols-outlined">edit_calendar</span>
+    <span class="text-[10px]">방문일정 수정</span>
+  </button>
+  <button type="button" id="export-btn" class="flex-[1.5] bg-primary text-on-primary font-bold py-4 rounded-xl flex flex-col items-center justify-center gap-1 active:scale-[0.98] transition-transform">
+    <span class="material-symbols-outlined">share</span>
+    <span class="text-[10px]">이미지 저장 및 공유</span>
+  </button>
+</div>
+</div>
+
+<!-- Share modal -->
+<div id="share-modal" class="no-export hidden fixed inset-0 z-[60] flex items-start justify-center bg-black/40 px-4 py-6 overflow-y-auto">
+  <div class="w-full max-w-sm my-auto bg-surface-container-lowest rounded-xl border border-outline-variant shadow-lg p-4 space-y-3 max-h-[none]">
+    <h3 class="font-headline-sm text-headline-sm text-primary">이미지 저장 및 공유</h3>
+    <p class="text-body-md text-on-surface-variant">일정표 이미지가 생성되었습니다. 공유 방법을 선택하세요.</p>
+    <div class="max-h-[50vh] overflow-y-auto rounded-lg border border-outline-variant bg-white">
+      <img id="share-preview" alt="일정표 미리보기" class="w-full object-contain">
+    </div>
+    <div class="flex flex-col gap-2 sticky bottom-0 bg-surface-container-lowest pt-1">
+      <button type="button" id="share-kakao-btn" class="w-full py-3 rounded-xl bg-[#FEE500] text-[#191919] font-semibold text-sm">카카오톡으로 공유</button>
+      <button type="button" id="share-sms-btn" class="w-full py-3 rounded-xl bg-primary text-on-primary font-semibold text-sm">SMS로 공유</button>
+      <button type="button" id="share-download-btn" class="w-full py-3 rounded-xl border border-outline-variant text-on-surface font-semibold text-sm">이미지 저장</button>
+      <button type="button" id="share-close-btn" class="w-full py-2 text-on-surface-variant text-sm">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- Offscreen share card (full profile + schedule) -->
+<div id="share-card-wrap" class="no-export" style="position:fixed;left:-9999px;top:0;z-index:-1;">
+  <div id="export-share-card" style="width:380px;background:#f8f9ff;color:#121c28;font-family:Inter,sans-serif;padding:24px;box-sizing:border-box;">
+    <div style="font-size:11px;letter-spacing:0.08em;color:#9a4600;font-weight:700;margin-bottom:6px;">POSCO VISIT</div>
+    <div style="font-size:22px;font-weight:800;color:#002b6b;margin-bottom:16px;">공식 방문 일정표</div>
+    <div style="background:#fff;border:1px solid #c3c6d4;border-radius:12px;padding:14px;margin-bottom:12px;">
+      <div style="font-size:11px;color:#737783;margin-bottom:4px;">방문일시</div>
+      <div id="export-datetime" style="font-size:16px;font-weight:700;color:#002b6b;">-</div>
+    </div>
+    <div style="background:#fff;border:1px solid #c3c6d4;border-radius:12px;padding:14px;margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <div style="font-size:14px;font-weight:700;color:#002b6b;">방문자 프로필</div>
+        <div id="export-clearance" style="font-size:10px;background:#d9e2ff;color:#04429a;padding:2px 8px;border-radius:999px;font-weight:700;">미설정</div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid #e5eeff;"><span style="color:#434652;font-size:13px;">성명</span><span id="export-name" style="font-weight:700;font-size:13px;">-</span></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid #e5eeff;"><span style="color:#434652;font-size:13px;">소속</span><span id="export-company" style="font-weight:700;font-size:13px;">-</span></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid #e5eeff;"><span style="color:#434652;font-size:13px;">이메일</span><span id="export-email" style="font-weight:700;font-size:12px;text-align:right;max-width:60%;word-break:break-all;">-</span></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid #e5eeff;"><span style="color:#434652;font-size:13px;">연락처</span><span id="export-phone" style="font-weight:700;font-size:13px;">-</span></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid #e5eeff;"><span style="color:#434652;font-size:13px;">방문지</span><span id="export-location" style="font-weight:700;font-size:13px;">-</span></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid #e5eeff;"><span style="color:#434652;font-size:13px;">등록자</span><span id="export-registrant" style="font-weight:700;font-size:13px;text-align:right;max-width:60%;">-</span></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid #e5eeff;"><span style="color:#434652;font-size:13px;">목적</span><span id="export-purpose" style="font-weight:700;font-size:13px;text-align:right;max-width:60%;">-</span></div>
+      <div><div style="color:#434652;font-size:13px;margin-bottom:4px;">특이사항</div><div id="export-notes" style="font-size:13px;font-weight:600;white-space:pre-wrap;word-break:break-word;">-</div></div>
+    </div>
+    <div id="export-timeline"></div>
+    <div style="margin-top:16px;font-size:10px;color:#737783;">POSCO 방문일정 공유</div>
+  </div>
+</div>
+
+<script>
+(async () => {
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get('id');
+  let visit = null;
+  let shareBlob = null;
+  let shareFile = null;
+  let shareText = '공식 방문 일정표';
+
+  const shareModal = document.getElementById('share-modal');
+  const sharePreview = document.getElementById('share-preview');
+
+  if (id) {
+    try {
+      const res = await fetch(`/api/visits/${id}`);
+      if (!res.ok) throw new Error('not found');
+      visit = await res.json();
+      document.getElementById('detail-datetime').textContent = `${visit.visit_date} ${visit.time_range}`;
+      document.getElementById('detail-status').textContent = visit.status;
+      document.getElementById('detail-location').textContent = visit.location || '-';
+      document.getElementById('detail-registrant').textContent =
+        [visit.registrant_name, visit.registrant_team].filter(Boolean).join(' · ') || '-';
+      document.getElementById('detail-purpose').textContent = visit.purpose || '-';
+
+      document.getElementById('profile-name').textContent = visit.visitor_name || '-';
+      document.getElementById('profile-company').textContent = visit.visitor_company || '-';
+      document.getElementById('profile-email').textContent = visit.visitor_email || '-';
+      document.getElementById('profile-phone').textContent = visit.visitor_phone || '-';
+      document.getElementById('profile-notes').textContent = visit.visitor_notes || '-';
+      document.getElementById('detail-clearance').textContent = visit.visitor_clearance || '미설정';
+
+      const timeline = document.getElementById('detail-timeline');
+      const items = visit.schedule_items || [];
+      if (!items.length) {
+        timeline.innerHTML = '<p class="text-on-surface-variant font-body-md pl-1">세부 일정이 없습니다.</p>';
+      } else {
+        timeline.innerHTML = items.map((item, i) => `
+          <div class="relative pl-8 pb-8">
+            <div class="timeline-dot"></div>
+            <div class="timeline-line ${i === items.length - 1 ? 'hidden' : ''}"></div>
+            <div class="flex flex-col gap-1">
+              <span class="font-label-caps text-label-caps text-secondary-container font-bold">${item.time || '-'}</span>
+              <div class="bg-surface-container-lowest border-l-4 border-primary p-md rounded-r-xl border border-outline-variant shadow-sm">
+                <p class="font-body-lg text-body-lg font-bold text-on-surface">${item.title || '제목 없음'}</p>
+                <p class="text-on-surface-variant font-body-md mt-1">${item.description || ''}</p>
+              </div>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      shareText = `[POSCO 방문일정]\n${visit.visitor_name} / ${visit.visit_date} ${visit.time_range}\n소속: ${visit.visitor_company || '-'}\n연락처: ${visit.visitor_phone || '-'}\n방문지: ${visit.location || '-'}\n목적: ${visit.purpose || '-'}`;
+    } catch (err) {
+      document.getElementById('detail-datetime').textContent = '일정을 불러올 수 없습니다.';
+    }
+  }
+
+  function escapeHtml(str) {
+    return String(str ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function fillExportCard(v) {
+    document.getElementById('export-datetime').textContent = `${v.visit_date} ${v.time_range}`;
+    document.getElementById('export-clearance').textContent = v.visitor_clearance || '미설정';
+    document.getElementById('export-name').textContent = v.visitor_name || '-';
+    document.getElementById('export-company').textContent = v.visitor_company || '-';
+    document.getElementById('export-email').textContent = v.visitor_email || '-';
+    document.getElementById('export-phone').textContent = v.visitor_phone || '-';
+    document.getElementById('export-location').textContent = v.location || '-';
+    document.getElementById('export-registrant').textContent =
+      [v.registrant_name, v.registrant_team].filter(Boolean).join(' · ') || '-';
+    document.getElementById('export-purpose').textContent = v.purpose || '-';
+    document.getElementById('export-notes').textContent = v.visitor_notes || '-';
+
+    const timeline = document.getElementById('export-timeline');
+    const items = v.schedule_items || [];
+    if (!items.length) {
+      timeline.innerHTML = '<div style="font-size:13px;color:#737783;">등록된 세부 일정이 없습니다.</div>';
+      return;
+    }
+    timeline.innerHTML = `
+      <div style="font-size:14px;font-weight:700;color:#002b6b;margin-bottom:8px;">세부 일정</div>
+      ${items.map((item) => `
+        <div style="background:#fff;border:1px solid #c3c6d4;border-left:4px solid #002b6b;border-radius:0 10px 10px 0;padding:10px;margin-bottom:8px;">
+          <div style="font-size:11px;color:#9a4600;font-weight:700;">${escapeHtml(item.time || '-')}</div>
+          <div style="font-size:14px;font-weight:700;margin-top:2px;">${escapeHtml(item.title || '제목 없음')}</div>
+          <div style="font-size:12px;color:#434652;margin-top:2px;">${escapeHtml(item.description || '')}</div>
+        </div>
+      `).join('')}
+    `;
+  }
+
+  function downloadShareImage() {
+    if (!shareBlob) return;
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(shareBlob);
+    a.download = shareFile ? shareFile.name : 'visit-schedule.png';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+
+  async function shareWithSystem(fallbackMsg) {
+    if (!shareFile) return false;
+    const data = { files: [shareFile], title: '공식 방문 일정표', text: shareText };
+    if (navigator.canShare && navigator.canShare(data)) {
+      await navigator.share(data);
+      return true;
+    }
+    if (navigator.share) {
+      await navigator.share({ title: data.title, text: `${shareText}\n\n(이미지는 저장 후 첨부하세요)` });
+      return true;
+    }
+    downloadShareImage();
+    alert(fallbackMsg || '이미지가 저장되었습니다. 카카오톡/SMS에서 사진을 첨부해 보내주세요.');
+    return false;
+  }
+
+  async function createScheduleImage() {
+    if (typeof html2canvas !== 'function') {
+      throw new Error('이미지 생성 라이브러리를 불러오지 못했습니다. 새로고침 후 다시 시도하세요.');
+    }
+    if (!visit) {
+      throw new Error('일정 정보가 없습니다.');
+    }
+    fillExportCard(visit);
+    const target = document.getElementById('export-share-card');
+    const canvas = await html2canvas(target, {
+      backgroundColor: '#f8f9ff',
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      width: target.scrollWidth,
+      height: target.scrollHeight,
+      windowWidth: target.scrollWidth,
+      windowHeight: target.scrollHeight,
+    });
+    shareBlob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+    if (!shareBlob) throw new Error('이미지 생성에 실패했습니다.');
+    shareFile = new File([shareBlob], `visit-schedule-${id || 'export'}.png`, { type: 'image/png' });
+    if (sharePreview.src) URL.revokeObjectURL(sharePreview.src);
+    sharePreview.src = URL.createObjectURL(shareBlob);
+    shareModal.classList.remove('hidden');
+    shareModal.scrollTop = 0;
+  }
+
+  document.getElementById('profile-edit-btn').addEventListener('click', () => {
+    const q = id ? `?visit_id=${encodeURIComponent(id)}` : '';
+    window.location.href = `/visitor.html${q}`;
+  });
+
+  document.getElementById('schedule-edit-btn').addEventListener('click', () => {
+    const q = id ? `?id=${encodeURIComponent(id)}` : '';
+    window.location.href = `/managing_schedule.html${q}`;
+  });
+
+  document.getElementById('export-btn').addEventListener('click', async function () {
+    const btn = this;
+    const original = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="material-symbols-outlined animate-spin">sync</span><span class="text-[10px]">이미지 생성 중...</span>';
+    try {
+      await createScheduleImage();
+    } catch (err) {
+      console.error(err);
+      alert(err.message || '이미지 생성 중 오류가 발생했습니다.');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = original;
+    }
+  });
+
+  document.getElementById('share-close-btn').addEventListener('click', () => {
+    shareModal.classList.add('hidden');
+  });
+  shareModal.addEventListener('click', (e) => {
+    if (e.target === shareModal) shareModal.classList.add('hidden');
+  });
+  document.getElementById('share-download-btn').addEventListener('click', () => {
+    downloadShareImage();
+  });
+  document.getElementById('share-kakao-btn').addEventListener('click', async () => {
+    try {
+      const ok = await shareWithSystem('이미지가 저장되었습니다. 카카오톡에서 사진을 첨부해 보내주세요.');
+      if (ok) shareModal.classList.add('hidden');
+    } catch (err) {
+      if (err && err.name === 'AbortError') return;
+      downloadShareImage();
+      alert('이미지가 저장되었습니다. 카카오톡에서 사진을 첨부해 보내주세요.');
+    }
+  });
+  document.getElementById('share-sms-btn').addEventListener('click', async () => {
+    try {
+      if (shareFile && navigator.canShare && navigator.canShare({ files: [shareFile] })) {
+        await navigator.share({ files: [shareFile], title: '공식 방문 일정표', text: shareText });
+        shareModal.classList.add('hidden');
+        return;
+      }
+    } catch (err) {
+      if (err && err.name === 'AbortError') return;
+    }
+    downloadShareImage();
+    const body = encodeURIComponent(`${shareText}\n\n(저장된 일정표 이미지를 함께 첨부하세요)`);
+    window.location.href = `sms:?body=${body}`;
+  });
+})();
+</script>
+
+
+
+
+</body></html>

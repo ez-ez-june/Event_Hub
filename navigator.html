@@ -1,0 +1,252 @@
+<!DOCTYPE html><html lang="ko" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        h1, h2, h3, .font-headline {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        /* Custom scrollbar for subtle professional look */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #d1dbec;
+            border-radius: 10px;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "background": "#f8f9ff",
+                        "primary-fixed": "#d9e2ff",
+                        "on-tertiary-fixed": "#370e00",
+                        "on-primary-container": "#91b1ff",
+                        "on-error-container": "#93000a",
+                        "secondary": "#9a4600",
+                        "on-surface-variant": "#434652",
+                        "outline": "#737783",
+                        "on-primary": "#ffffff",
+                        "tertiary-fixed-dim": "#ffb599",
+                        "tertiary-fixed": "#ffdbce",
+                        "on-background": "#121c28",
+                        "primary-fixed-dim": "#b0c6ff",
+                        "surface-container-high": "#dfe9fa",
+                        "tertiary": "#571b00",
+                        "on-secondary": "#ffffff",
+                        "surface-tint": "#2d5bb3",
+                        "secondary-fixed": "#ffdbc9",
+                        "inverse-on-surface": "#eaf1ff",
+                        "primary-container": "#004098",
+                        "on-secondary-container": "#672c00",
+                        "on-secondary-fixed-variant": "#753400",
+                        "on-error": "#ffffff",
+                        "error": "#ba1a1a",
+                        "on-tertiary": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "surface-variant": "#d9e3f4",
+                        "inverse-surface": "#27313e",
+                        "surface-container-highest": "#d9e3f4",
+                        "secondary-container": "#fd8a3d",
+                        "on-tertiary-fixed-variant": "#7e2c01",
+                        "on-primary-fixed": "#001945",
+                        "surface-container-low": "#eef4ff",
+                        "outline-variant": "#c3c6d4",
+                        "on-secondary-fixed": "#321200",
+                        "on-surface": "#121c28",
+                        "secondary-fixed-dim": "#ffb68c",
+                        "surface-container-lowest": "#ffffff",
+                        "inverse-primary": "#b0c6ff",
+                        "tertiary-container": "#7c2a00",
+                        "surface-container": "#e5eeff",
+                        "surface": "#f8f9ff",
+                        "surface-bright": "#f8f9ff",
+                        "primary": "#002b6b",
+                        "surface-dim": "#d1dbec",
+                        "on-tertiary-container": "#ff986e",
+                        "on-primary-fixed-variant": "#04429a"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "margin-mobile": "20px",
+                        "lg": "24px",
+                        "gutter": "16px",
+                        "xs": "4px",
+                        "xl": "32px",
+                        "md": "16px",
+                        "base": "4px",
+                        "sm": "8px",
+                        "margin-desktop": "40px"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "headline-sm": ["Plus Jakarta Sans"],
+                        "headline-lg-mobile": ["Plus Jakarta Sans"],
+                        "body-md": ["Inter"],
+                        "label-caps": ["JetBrains Mono"],
+                        "body-lg": ["Inter"],
+                        "headline-md": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["30px", {"lineHeight": "38px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "headline-sm": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                        "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-surface text-on-surface min-h-screen relative overflow-hidden">
+<!-- Background Content Overlay (Dimmed background simulation) -->
+<div class="absolute inset-0 bg-on-background/20 backdrop-blur-sm z-0"></div>
+<!-- Main Drawer Container -->
+<main class="fixed inset-y-0 right-0 h-full w-full max-w-md bg-surface shadow-2xl z-50 flex flex-col transform transition-transform duration-300 ease-out border-l border-outline-variant">
+<!-- TopAppBar Predicted Component Logic -->
+<header class="w-full top-0 sticky bg-surface dark:bg-inverse-surface border-b border-outline-variant dark:border-outline flex items-center justify-between px-margin-mobile h-16 shrink-0">
+<div class="flex items-center gap-sm">
+<span class="font-headline-md text-headline-md font-bold text-primary dark:text-inverse-primary">Menu</span>
+</div>
+<button aria-label="Close menu" class="w-10 h-10 flex items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container-low transition-colors duration-200">
+<span class="material-symbols-outlined" data-icon="close">close</span>
+</button>
+</header>
+<!-- NavigationDrawer Body -->
+<div class="flex-1 overflow-y-auto px-md py-xl space-y-gutter">
+<!-- Branding Section within Drawer -->
+<div class="px-sm mb-xl">
+<p class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest mb-xs">Visit Management System</p>
+<h2 class="font-headline-sm text-headline-sm text-primary">Resources are Limited, Creativity is Infinite</h2>
+</div>
+<!-- Navigation Links (Mapping JSON items) -->
+<nav class="space-y-sm">
+<!-- Item 1: Active State mapped from "Main Dashboard" -->
+<a class="flex items-center gap-md px-md py-4 bg-primary-container text-on-primary-container font-bold rounded-full transition-transform duration-150 active:scale-95 group" href="#">
+<span class="material-symbols-outlined text-on-primary-container" data-icon="dashboard" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="font-body-lg text-body-lg">메인 대시보드</span>
+</a>
+<!-- Item 2: Visitor Profile -->
+<a class="flex items-center gap-md px-md py-4 text-on-surface-variant hover:bg-surface-container-high transition-colors duration-200 rounded-full group" href="#" style="background-color: transparent;">
+<span class="material-symbols-outlined text-outline" data-icon="person_search">person_search</span>
+<span class="font-body-lg text-body-lg">방문자 프로필 조회/수정</span>
+</a>
+<!-- Item 3: Visit Schedule -->
+<a class="flex items-center gap-md px-md py-4 text-on-surface-variant hover:bg-surface-container-high transition-colors duration-200 rounded-full group" href="#" style="background-color: transparent;">
+<span class="material-symbols-outlined text-outline" data-icon="calendar_month">calendar_month</span>
+<span class="font-body-lg text-body-lg">방문일정 조회/수정</span>
+</a>
+<!-- Item 4: Share Schedule -->
+<a class="flex items-center gap-md px-md py-4 text-on-surface-variant hover:bg-surface-container-high transition-colors duration-200 rounded-full group" href="#" style="background-color: transparent;">
+<span class="material-symbols-outlined text-outline" data-icon="share">share</span>
+<span class="font-body-lg text-body-lg">일정표 공유하기 (JPG)</span>
+</a>
+</nav>
+<!-- Decorative Divider -->
+<div class="h-px bg-outline-variant/30 my-xl"></div>
+<!-- Settings / Secondary Section -->
+<nav class="space-y-sm">
+<a class="flex items-center gap-md px-md py-3 text-on-surface-variant/80 hover:bg-surface-container-high transition-colors duration-200 rounded-full" href="#" style="background-color: transparent;">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-body-md text-body-md">환경설정</span>
+</a>
+<a class="flex items-center gap-md px-md py-3 text-on-surface-variant/80 hover:bg-surface-container-high transition-colors duration-200 rounded-full" href="#" style="background-color: transparent;">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+<span class="font-body-md text-body-md">도움말 및 지원</span>
+</a>
+</nav>
+</div>
+<!-- Footer Logo/Status -->
+
+</main>
+<!-- Side Content Area (Visible on larger screens to show depth) -->
+<div class="hidden lg:flex flex-col p-margin-desktop gap-xl w-[calc(100%-448px)]">
+<div class="flex flex-col gap-sm">
+<div class="w-24 h-2 bg-primary-container/20 rounded-full"></div>
+<div class="w-48 h-10 bg-primary-container/10 rounded-xl"></div>
+</div>
+<div class="grid grid-cols-2 gap-lg">
+<div class="h-64 bg-white border border-outline-variant rounded-xl p-md flex flex-col gap-md">
+<div class="w-full h-32 bg-surface-container-high rounded-lg overflow-hidden relative">
+<div class="absolute inset-0 flex items-center justify-center">
+<span class="material-symbols-outlined text-outline-variant text-4xl" data-icon="analytics">analytics</span>
+</div>
+</div>
+<div class="space-y-sm">
+<div class="h-4 bg-surface-variant w-3/4 rounded"></div>
+<div class="h-4 bg-surface-variant w-1/2 rounded"></div>
+</div>
+</div>
+<div class="h-64 bg-white border border-outline-variant rounded-xl p-md flex flex-col gap-md">
+<div class="w-full h-32 bg-surface-container-high rounded-lg overflow-hidden relative">
+<div class="absolute inset-0 flex items-center justify-center">
+<span class="material-symbols-outlined text-outline-variant text-4xl" data-icon="groups">groups</span>
+</div>
+</div>
+<div class="space-y-sm">
+<div class="h-4 bg-surface-variant w-3/4 rounded"></div>
+<div class="h-4 bg-surface-variant w-1/2 rounded"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Floating Action Button Contextual Logic (Excluded based on task: only menu shown) -->
+<script>
+        // Micro-interaction for the close button
+        const closeBtn = document.querySelector('button[aria-label="Close menu"]');
+        const drawer = document.querySelector('main');
+        
+        closeBtn.addEventListener('click', () => {
+            drawer.style.transform = 'translateX(100%)';
+            setTimeout(() => {
+                // In a real app, this would route back or close overlay
+                drawer.style.transform = 'translateX(0)'; 
+            }, 1000);
+        });
+
+        // Hover effect for nav items
+        const navItems = document.querySelectorAll('nav a');
+        navItems.forEach(item => {
+            item.addEventListener('mouseenter', () => {
+                if(!item.classList.contains('bg-primary-container')) {
+                    item.style.backgroundColor = 'var(--tw-bg-opacity, #dfe9fa)';
+                }
+            });
+            item.addEventListener('mouseleave', () => {
+                if(!item.classList.contains('bg-primary-container')) {
+                    item.style.backgroundColor = 'transparent';
+                }
+            });
+        });
+    </script>
+
+
+
+
+</body></html>

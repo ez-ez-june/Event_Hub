@@ -1,0 +1,369 @@
+<!DOCTYPE html><html class="light" lang="ko"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>방문객 프로필 등록 - Visit Management</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Plus+Jakarta+Sans:wght@600;700&amp;family=JetBrains+Mono:wght@500&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&amp;family=JetBrains+Mono:wght@100..900&amp;family=Plus+Jakarta+Sans:wght@100..900&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-surface": "#121c28",
+                    "on-primary": "#ffffff",
+                    "surface-bright": "#f8f9ff",
+                    "secondary-fixed": "#ffdbc9",
+                    "background": "#f8f9ff",
+                    "primary-fixed-dim": "#b0c6ff",
+                    "inverse-surface": "#27313e",
+                    "outline": "#737783",
+                    "tertiary-fixed-dim": "#ffb599",
+                    "on-error-container": "#93000a",
+                    "on-tertiary": "#ffffff",
+                    "on-background": "#121c28",
+                    "surface": "#f8f9ff",
+                    "secondary-fixed-dim": "#ffb68c",
+                    "secondary-container": "#fd8a3d",
+                    "on-tertiary-container": "#ff986e",
+                    "surface-container-low": "#eef4ff",
+                    "on-secondary-fixed": "#321200",
+                    "primary-fixed": "#d9e2ff",
+                    "surface-variant": "#d9e3f4",
+                    "surface-container-highest": "#d9e3f4",
+                    "error-container": "#ffdad6",
+                    "on-tertiary-fixed": "#370e00",
+                    "tertiary": "#571b00",
+                    "on-primary-fixed": "#001945",
+                    "surface-dim": "#d1dbec",
+                    "on-error": "#ffffff",
+                    "outline-variant": "#c3c6d4",
+                    "on-tertiary-fixed-variant": "#7e2c01",
+                    "error": "#ba1a1a",
+                    "inverse-primary": "#b0c6ff",
+                    "tertiary-container": "#7c2a00",
+                    "secondary": "#9a4600",
+                    "on-secondary-fixed-variant": "#753400",
+                    "on-primary-fixed-variant": "#04429a",
+                    "on-secondary-container": "#672c00",
+                    "on-primary-container": "#91b1ff",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-container": "#e5eeff",
+                    "primary": "#002b6b",
+                    "inverse-on-surface": "#eaf1ff",
+                    "tertiary-fixed": "#ffdbce",
+                    "surface-container-high": "#dfe9fa",
+                    "surface-tint": "#2d5bb3",
+                    "on-surface-variant": "#434652",
+                    "on-secondary": "#ffffff",
+                    "primary-container": "#004098"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "margin-mobile": "20px",
+                    "gutter": "16px",
+                    "base": "4px",
+                    "lg": "24px",
+                    "md": "16px",
+                    "xs": "4px",
+                    "sm": "8px",
+                    "xl": "32px",
+                    "margin-desktop": "40px"
+            },
+            "fontFamily": {
+                    "headline-sm": ["Plus Jakarta Sans"],
+                    "headline-md": ["Plus Jakarta Sans"],
+                    "body-md": ["Inter"],
+                    "label-caps": ["JetBrains Mono"],
+                    "body-lg": ["Inter"],
+                    "headline-lg-mobile": ["Plus Jakarta Sans"],
+                    "headline-lg": ["Plus Jakarta Sans"]
+            },
+            "fontSize": {
+                    "headline-sm": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                    "headline-lg": ["30px", {"lineHeight": "38px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            line-height: 1;
+            text-transform: none;
+            letter-spacing: normal;
+            word-wrap: normal;
+            white-space: nowrap;
+            direction: ltr;
+        }
+        body {
+            background-color: #f8f9ff;
+            color: #121c28;
+            -webkit-font-smoothing: antialiased;
+        }
+        .form-input-focus:focus {
+            border-width: 2px;
+            border-color: #002b6b;
+            outline: none;
+        }
+        /* Custom radio styling for institutional look */
+        .custom-radio:checked {
+            background-color: #002b6b;
+            border-color: #002b6b;
+        }
+    </style>
+</head>
+<body class="font-body-md text-body-md selection:bg-primary-fixed selection:text-on-primary-fixed">
+<!-- TopAppBar -->
+<header class="w-full top-0 sticky bg-surface-container-lowest border-b border-outline-variant z-40">
+<div class="flex items-center justify-between px-margin-mobile py-sm w-full h-16">
+<div class="flex items-center gap-3">
+<!-- No back arrow as requested -->
+<h1 class="font-headline-md text-headline-md font-bold text-primary">방문객 관리</h1>
+</div>
+<button class="material-symbols-outlined text-primary hover:bg-surface-container-high transition-colors p-2 rounded-full active:opacity-80 transition-opacity">
+                more_vert
+            </button>
+</div>
+</header>
+<main class="pb-32">
+<!-- Hero Section / Form Header -->
+<div class="px-margin-mobile pt-xl pb-md">
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface mb-xs">방문객 프로필 설정</h2>
+<p class="text-on-surface-variant font-body-md">기관 방문객의 공식 프로필과 보안 등급을 관리합니다.</p>
+</div>
+<form class="space-y-xl px-margin-mobile">
+<!-- Section: Basic Information -->
+<section class="space-y-md">
+<div class="flex items-center gap-2 border-b border-outline-variant pb-base">
+<span class="material-symbols-outlined text-primary text-[20px]">person</span>
+<h3 class="font-label-caps text-label-caps text-primary uppercase">기본 정보</h3>
+</div>
+<div class="grid gap-md">
+<!-- Profile Image Placeholder -->
+<div class="flex justify-center py-md">
+<div class="relative group">
+<div class="w-24 h-24 rounded-full border-2 border-dashed border-outline-variant flex items-center justify-center bg-surface-container-low overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A formal professional headshot portrait of a visitor in a business suit, set against a clean gray studio background with soft Rembrandt lighting. The image maintains a high-end corporate aesthetic with sharp focus and minimal color saturation, reflecting institutional excellence and professional rigor." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBbPmg0wrkXg6v2IvscUCodbUv0LmTKJjH4Iyt8Ue6_-tPFHaAWA7Bsr7KrED9xzo2ZyXNH8tLCxvS7GuYERWNkPddEkjpVlMR3-3tbGGeD3jWMC4Y9aZaXctBoBlhqNNRHeyUnglMLd_AhFYQFwy5DQ5dEgGc0aFANKmpeRuTHxqU6Y0iTJQPKlnNpslWOeiuojr_tDLp7RTZa5JK_hqZAC5xe5upPsJAhXBE-vX_pxOg7hzZTLLA">
+<div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+<span class="material-symbols-outlined text-white">photo_camera</span>
+</div>
+</div>
+</div>
+</div>
+<div class="space-y-base">
+<label class="font-label-caps text-label-caps text-on-surface-variant block">성명 (Full Name)</label>
+<input id="visitor-name" class="w-full px-md py-sm border border-outline-variant rounded-lg bg-white form-input-focus font-body-md" placeholder="방문객 성함을 입력하세요" type="text">
+</div>
+<div class="space-y-base">
+<label class="font-label-caps text-label-caps text-on-surface-variant block">소속 (Affiliation)</label>
+<input id="visitor-company" class="w-full px-md py-sm border border-outline-variant rounded-lg bg-white form-input-focus font-body-md" placeholder="기업명 또는 기관명을 입력하세요" type="text">
+</div>
+</div>
+</section>
+<!-- Section: Contact Information -->
+<section class="space-y-md">
+<div class="flex items-center gap-2 border-b border-outline-variant pb-base">
+<span class="material-symbols-outlined text-primary text-[20px]">contact_page</span>
+<h3 class="font-label-caps text-label-caps text-primary uppercase">연락처 정보</h3>
+</div>
+<div class="grid gap-md">
+<div class="space-y-base">
+<label class="font-label-caps text-label-caps text-on-surface-variant block">이메일 (Email)</label>
+<input id="visitor-email" class="w-full px-md py-sm border border-outline-variant rounded-lg bg-white form-input-focus font-body-md" placeholder="example@corporate.com" type="email">
+</div>
+<div class="space-y-base">
+<label class="font-label-caps text-label-caps text-on-surface-variant block">연락처 (Phone)</label>
+<input id="visitor-phone" class="w-full px-md py-sm border border-outline-variant rounded-lg bg-white form-input-focus font-body-md" placeholder="010-0000-0000" type="tel">
+</div>
+</div>
+</section>
+<!-- Section: Security & Protocol -->
+<section class="space-y-md">
+<div class="flex items-center gap-2 border-b border-outline-variant pb-base">
+<span class="material-symbols-outlined text-primary text-[20px]">security</span>
+<h3 class="font-label-caps text-label-caps text-primary uppercase">대응 프로토콜</h3>
+</div>
+<div class="space-y-sm">
+<label class="font-label-caps text-label-caps text-on-surface-variant block">보안 등급 (Security Clearance)</label>
+<div class="grid grid-cols-2 gap-sm">
+<label class="flex items-center gap-md p-md border border-outline-variant rounded-lg bg-white active:bg-surface-container cursor-pointer transition-colors"><input class="w-5 h-5 custom-radio text-primary border-outline focus:ring-primary" name="clearance" type="radio" value="장관급 (VIP)"><div class="flex flex-col"><span class="font-body-md font-semibold text-on-surface">장관급 (VIP)</span><span class="text-[10px] text-on-surface-variant uppercase">Level 6</span></div></label>
+<label class="flex items-center gap-md p-md border border-outline-variant rounded-lg bg-white active:bg-surface-container cursor-pointer transition-colors"><input class="w-5 h-5 custom-radio text-primary border-outline focus:ring-primary" name="clearance" type="radio" value="차관급 (Executive High)"><div class="flex flex-col"><span class="font-body-md font-semibold text-on-surface">차관급 (Executive High)</span><span class="text-[10px] text-on-surface-variant uppercase">Level 5</span></div></label>
+<label class="flex items-center gap-md p-md border border-outline-variant rounded-lg bg-white active:bg-surface-container cursor-pointer transition-colors"><input class="w-5 h-5 custom-radio text-primary border-outline focus:ring-primary" name="clearance" type="radio" value="준차관급 (Executive)"><div class="flex flex-col"><span class="font-body-md font-semibold text-on-surface">준차관급 (Executive)</span><span class="text-[10px] text-on-surface-variant uppercase">Level 4</span></div></label>
+<label class="flex items-center gap-md p-md border border-outline-variant rounded-lg bg-white active:bg-surface-container cursor-pointer transition-colors"><input class="w-5 h-5 custom-radio text-primary border-outline focus:ring-primary" name="clearance" type="radio" value="실장급 (Standard)"><div class="flex flex-col"><span class="font-body-md font-semibold text-on-surface">실장급 (Standard)</span><span class="text-[10px] text-on-surface-variant uppercase">Level 3</span></div></label>
+<label class="flex items-center gap-md p-md border border-outline-variant rounded-lg bg-white active:bg-surface-container cursor-pointer transition-colors"><input class="w-5 h-5 custom-radio text-primary border-outline focus:ring-primary" name="clearance" type="radio" value="국장급 (Basic)"><div class="flex flex-col"><span class="font-body-md font-semibold text-on-surface">국장급 (Basic)</span><span class="text-[10px] text-on-surface-variant uppercase">Level 2</span></div></label>
+<label class="flex items-center gap-md p-md border border-outline-variant rounded-lg bg-white active:bg-surface-container cursor-pointer transition-colors"><input class="w-5 h-5 custom-radio text-primary border-outline focus:ring-primary" name="clearance" type="radio" value="과장급이하 (General)"><div class="flex flex-col"><span class="font-body-md font-semibold text-on-surface">과장급이하 (General)</span><span class="text-[10px] text-on-surface-variant uppercase">Level 1</span></div></label>
+</div>
+</div>
+<div class="space-y-base">
+<label class="font-label-caps text-label-caps text-on-surface-variant block">특이사항 및 요청사항 (Notes)</label>
+<textarea id="visitor-notes" class="w-full px-md py-sm border border-outline-variant rounded-lg bg-white form-input-focus font-body-md resize-none" placeholder="의전 관련 주요 사항이나 보안 요청사항을 입력하세요" rows="4"></textarea>
+</div>
+</section>
+</form>
+</main>
+<!-- Quick Action Bar -->
+<div class="fixed bottom-0 left-0 w-full bg-white/80 backdrop-blur-md border-t border-outline-variant px-margin-mobile py-md z-50">
+<div class="flex gap-2 items-stretch">
+<button type="button" id="cancel-btn" class="flex-1 min-w-0 border border-outline-variant bg-surface text-on-surface text-[12px] font-semibold py-3 px-1 rounded-xl flex items-center justify-center text-center leading-tight active:scale-95 transition-all hover:bg-surface-container-low">
+취소<br><span class="font-normal text-[10px] opacity-70">(메인화면 이동)</span>
+</button>
+<button type="button" id="save-schedule-btn" class="flex-[1.4] min-w-0 bg-primary-container text-on-primary text-[12px] font-semibold py-3 px-1 rounded-xl flex items-center justify-center text-center leading-tight active:scale-95 transition-all shadow-md">
+저장 후<br>방문일정수정
+</button>
+<button type="button" id="save-main-btn" class="flex-[1.4] min-w-0 bg-primary text-on-primary text-[12px] font-semibold py-3 px-1 rounded-xl flex items-center justify-center text-center leading-tight active:scale-95 transition-all shadow-md">
+저장 후<br>메인화면이동
+</button>
+</div>
+</div>
+<!-- BottomNavBar (Hidden for focused task as per suppression rule: Task-Focused sub-page) -->
+<!-- Navigation is hidden to prioritize the form completion flow -->
+<script>
+(() => {
+  const params = new URLSearchParams(window.location.search);
+  const visitId = params.get('visit_id') || params.get('id') || '';
+
+  const nameInput = document.getElementById('visitor-name');
+  const companyInput = document.getElementById('visitor-company');
+  const emailInput = document.getElementById('visitor-email');
+  const phoneInput = document.getElementById('visitor-phone');
+  const notesInput = document.getElementById('visitor-notes');
+
+  function setClearance(value) {
+    const radios = document.querySelectorAll('input[name="clearance"]');
+    radios.forEach((radio) => {
+      const label = radio.closest('label');
+      const checked = value && radio.value === value;
+      radio.checked = checked;
+      if (!label) return;
+      if (checked) {
+        label.classList.add('border-primary-container', 'bg-surface-container-low');
+        label.classList.remove('border-outline-variant', 'bg-white');
+      } else {
+        label.classList.remove('border-primary-container', 'bg-surface-container-low');
+        label.classList.add('border-outline-variant', 'bg-white');
+      }
+    });
+  }
+
+  function applyProfile(v) {
+    nameInput.value = v.visitor_name || '';
+    companyInput.value = v.visitor_company || '';
+    emailInput.value = v.visitor_email || '';
+    phoneInput.value = v.visitor_phone || '';
+    notesInput.value = v.visitor_notes || '';
+    setClearance(v.visitor_clearance || '');
+  }
+
+  async function loadFromVisit() {
+    if (visitId) {
+      try {
+        const res = await fetch(`/api/visits/${visitId}`);
+        if (res.ok) {
+          applyProfile(await res.json());
+          return;
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    try {
+      const cached = JSON.parse(sessionStorage.getItem('pending_visitor_profile') || 'null');
+      if (cached) {
+        applyProfile({
+          visitor_name: cached.visitor_name || '',
+          visitor_company: cached.visitor_company || '',
+          visitor_email: '',
+          visitor_phone: '',
+          visitor_notes: '',
+          visitor_clearance: '',
+        });
+        return;
+      }
+    } catch (err) {
+      // ignore
+    }
+
+    applyProfile({});
+  }
+
+  async function saveProfile(redirectTo) {
+    if (!visitId) {
+      alert('연결된 방문 일정이 없습니다. 일정 등록 후 다시 시도하세요.');
+      return;
+    }
+
+    const clearance = document.querySelector('input[name="clearance"]:checked');
+    const payload = {
+      visitor_name: nameInput.value.trim(),
+      visitor_company: companyInput.value.trim(),
+      visitor_email: emailInput.value.trim(),
+      visitor_phone: phoneInput.value.trim(),
+      visitor_clearance: clearance ? clearance.value : '',
+      visitor_notes: notesInput.value.trim(),
+    };
+
+    try {
+      const res = await fetch(`/api/visits/${visitId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || '저장 실패');
+      window.location.href = redirectTo;
+    } catch (err) {
+      alert(err.message || '프로필 저장 중 오류가 발생했습니다.');
+    }
+  }
+
+  document.querySelectorAll('input, textarea').forEach((el) => {
+    el.addEventListener('focus', () => {
+      el.parentElement.querySelector('label')?.classList.add('text-primary');
+    });
+    el.addEventListener('blur', () => {
+      el.parentElement.querySelector('label')?.classList.remove('text-primary');
+    });
+  });
+
+  const radioLabels = document.querySelectorAll('label:has(input[type="radio"])');
+  radioLabels.forEach((label) => {
+    const input = label.querySelector('input');
+    input.addEventListener('change', () => setClearance(input.value));
+  });
+
+  document.getElementById('cancel-btn').addEventListener('click', () => {
+    if (confirm('작성을 취소하고 메인화면으로 이동할까요?')) {
+      window.location.href = '/';
+    }
+  });
+  document.getElementById('save-schedule-btn').addEventListener('click', () => {
+    saveProfile(visitId ? `/managing_schedule.html?id=${encodeURIComponent(visitId)}` : '/managing_schedule.html');
+  });
+  document.getElementById('save-main-btn').addEventListener('click', () => {
+    saveProfile(visitId ? `/visit_management.html?id=${encodeURIComponent(visitId)}` : '/');
+  });
+
+  loadFromVisit();
+})();
+</script>
+
+
+
+
+</body></html>
