@@ -7,3 +7,5 @@ venv/
 *.egg-info/
 .DS_Store
 Thumbs.db
+static/share/*
+!static/share/.gitkeep

@@ -12,6 +12,7 @@
 <!-- Tailwind CSS -->
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.5/kakao.min.js" crossorigin="anonymous"></script>
 <script id="tailwind-config">
         tailwind.config = {
             darkMode: "class",
@@ -528,6 +529,71 @@
     shareModal.scrollTop = 0;
   }
 
+  async function ensureKakaoReady() {
+    if (typeof Kakao === 'undefined') return false;
+    if (Kakao.isInitialized()) return true;
+    try {
+      const res = await fetch('/api/config');
+      const cfg = await res.json();
+      const key = (cfg.kakao_js_key || '').trim();
+      if (!key) return false;
+      Kakao.init(key);
+      return Kakao.isInitialized();
+    } catch (err) {
+      console.error(err);
+      return false;
+    }
+  }
+
+  async function uploadShareImage() {
+    if (!shareBlob) throw new Error('공유할 이미지가 없습니다.');
+    const dataUrl = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error('이미지 변환 실패'));
+      reader.readAsDataURL(shareBlob);
+    });
+    const res = await fetch('/api/share-images', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: dataUrl }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || '이미지 업로드 실패');
+    return data.url;
+  }
+
+  async function shareWithKakao() {
+    const ready = await ensureKakaoReady();
+    if (!ready) {
+      throw new Error('카카오 공유 설정이 아직 없습니다. JavaScript 키를 등록해 주세요.');
+    }
+    const imageUrl = await uploadShareImage();
+    const pageUrl = `${window.location.origin}/`;
+    Kakao.Share.sendDefault({
+      objectType: 'feed',
+      content: {
+        title: 'POSCO 방문 일정표',
+        description: shareText,
+        imageUrl,
+        link: {
+          mobileWebUrl: pageUrl,
+          webUrl: pageUrl,
+        },
+      },
+      buttons: [
+        {
+          title: '일정 확인하기',
+          link: {
+            mobileWebUrl: pageUrl,
+            webUrl: pageUrl,
+          },
+        },
+      ],
+    });
+    return true;
+  }
+
   async function shareWithSystem(preferredAppsHint) {
     if (!shareFile) return;
     const data = {
@@ -703,6 +769,13 @@
     downloadShareImage();
   });
   document.getElementById('share-kakao-btn').addEventListener('click', async () => {
+    try {
+      await shareWithKakao();
+      shareModal.classList.add('hidden');
+      return;
+    } catch (kakaoErr) {
+      console.warn('Kakao share fallback:', kakaoErr);
+    }
     try {
       const shared = await shareWithSystem('이미지가 저장되었습니다. 카카오톡 채팅방에 사진을 첨부해 보내주세요.');
       if (shared) shareModal.classList.add('hidden');

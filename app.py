@@ -1,7 +1,10 @@
 """POSCO 방문일정 공유 웹앱 — Flask 서버."""
 
+import base64
 import json
 import os
+import re
+import uuid
 from datetime import datetime, time
 from pathlib import Path
 
@@ -10,7 +13,8 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import inspect
 
 BASE_DIR = Path(__file__).resolve().parent
-
+SHARE_DIR = BASE_DIR / "static" / "share"
+SHARE_DIR.mkdir(parents=True, exist_ok=True)
 
 def database_uri() -> str:
     """Render 등에서는 DATABASE_URL(Postgres), 로컬은 SQLite."""
@@ -162,6 +166,62 @@ def static_files(filename):
 
 
 # ── API ────────────────────────────────────────────────
+
+
+@app.get("/api/config")
+def public_config():
+    """프론트엔드 공개 설정 (카카오 JS 키 등)."""
+    return jsonify({
+        "kakao_js_key": (os.environ.get("KAKAO_JS_KEY") or "").strip(),
+        "public_origin": (os.environ.get("PUBLIC_ORIGIN") or "").strip(),
+    })
+
+
+@app.post("/api/share-images")
+def create_share_image():
+    """카카오 공유용으로 일정표 PNG를 임시 저장하고 공개 URL을 반환."""
+    data = request.get_json(silent=True) or {}
+    image_data = (data.get("image") or "").strip()
+    if not image_data.startswith("data:image/"):
+        return jsonify({"error": "이미지 데이터가 필요합니다."}), 400
+
+    match = re.match(r"^data:image/(png|jpeg|jpg);base64,(.+)$", image_data, re.I | re.S)
+    if not match:
+        return jsonify({"error": "지원하지 않는 이미지 형식입니다."}), 400
+
+    ext = match.group(1).lower()
+    if ext == "jpg":
+        ext = "jpeg"
+    raw = match.group(2)
+    try:
+        binary = base64.b64decode(raw, validate=True)
+    except Exception:
+        return jsonify({"error": "이미지 디코딩에 실패했습니다."}), 400
+
+    if len(binary) > 2_500_000:
+        return jsonify({"error": "이미지 용량이 너무 큽니다."}), 400
+
+    # 오래된 공유 이미지 정리 (24시간)
+    now = datetime.utcnow().timestamp()
+    for path in SHARE_DIR.glob("*.png"):
+        try:
+            if now - path.stat().st_mtime > 86400:
+                path.unlink(missing_ok=True)
+        except OSError:
+            pass
+    for path in SHARE_DIR.glob("*.jpeg"):
+        try:
+            if now - path.stat().st_mtime > 86400:
+                path.unlink(missing_ok=True)
+        except OSError:
+            pass
+
+    filename = f"{uuid.uuid4().hex}.{ext if ext != 'jpeg' else 'jpg'}"
+    (SHARE_DIR / filename).write_bytes(binary)
+
+    origin = (os.environ.get("PUBLIC_ORIGIN") or request.url_root).rstrip("/")
+    url = f"{origin}/static/share/{filename}"
+    return jsonify({"url": url, "filename": filename}), 201
 
 
 @app.get("/api/visits")

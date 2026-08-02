@@ -4,6 +4,7 @@
 <title>방문 일정 상세</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.5/kakao.min.js" crossorigin="anonymous"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@600;700;800&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
@@ -423,6 +424,73 @@
     `;
   }
 
+  async function ensureKakaoReady() {
+    if (typeof Kakao === 'undefined') return false;
+    if (Kakao.isInitialized()) return true;
+    try {
+      const res = await fetch('/api/config');
+      const cfg = await res.json();
+      const key = (cfg.kakao_js_key || '').trim();
+      if (!key) return false;
+      Kakao.init(key);
+      return Kakao.isInitialized();
+    } catch (err) {
+      console.error(err);
+      return false;
+    }
+  }
+
+  async function uploadShareImage() {
+    if (!shareBlob) throw new Error('공유할 이미지가 없습니다.');
+    const dataUrl = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error('이미지 변환 실패'));
+      reader.readAsDataURL(shareBlob);
+    });
+    const res = await fetch('/api/share-images', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: dataUrl }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || '이미지 업로드 실패');
+    return data.url;
+  }
+
+  async function shareWithKakao() {
+    const ready = await ensureKakaoReady();
+    if (!ready) {
+      throw new Error('카카오 공유 설정이 아직 없습니다. JavaScript 키를 등록해 주세요.');
+    }
+    const imageUrl = await uploadShareImage();
+    const pageUrl = id
+      ? `${window.location.origin}/visit_management.html?id=${encodeURIComponent(id)}`
+      : `${window.location.origin}/`;
+    Kakao.Share.sendDefault({
+      objectType: 'feed',
+      content: {
+        title: 'POSCO 방문 일정표',
+        description: shareText,
+        imageUrl,
+        link: {
+          mobileWebUrl: pageUrl,
+          webUrl: pageUrl,
+        },
+      },
+      buttons: [
+        {
+          title: '일정 확인하기',
+          link: {
+            mobileWebUrl: pageUrl,
+            webUrl: pageUrl,
+          },
+        },
+      ],
+    });
+    return true;
+  }
+
   function downloadShareImage() {
     if (!shareBlob) return;
     const a = document.createElement('a');
@@ -513,6 +581,13 @@
     downloadShareImage();
   });
   document.getElementById('share-kakao-btn').addEventListener('click', async () => {
+    try {
+      await shareWithKakao();
+      shareModal.classList.add('hidden');
+      return;
+    } catch (kakaoErr) {
+      console.warn('Kakao share fallback:', kakaoErr);
+    }
     try {
       const ok = await shareWithSystem('이미지가 저장되었습니다. 카카오톡에서 사진을 첨부해 보내주세요.');
       if (ok) shareModal.classList.add('hidden');
