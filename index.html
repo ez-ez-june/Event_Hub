@@ -171,14 +171,95 @@
             font-weight: 700;
             box-shadow: 0 1px 2px rgba(0,0,0,0.04);
         }
+        .filter-control {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            min-width: 132px;
+            padding: 6px 10px 6px 10px;
+            border: 1.5px solid #002b6b;
+            border-radius: 10px;
+            background: #ffffff;
+            box-shadow: 0 1px 2px rgba(0, 43, 107, 0.08);
+        }
+        .filter-control .filter-icon {
+            color: #002b6b;
+            font-size: 18px;
+            line-height: 1;
+        }
+        .filter-control select {
+            appearance: none;
+            -webkit-appearance: none;
+            border: 0;
+            background: transparent;
+            color: #002b6b;
+            font-size: 14px;
+            font-weight: 700;
+            padding: 2px 22px 2px 0;
+            min-width: 72px;
+            outline: none;
+            cursor: pointer;
+        }
+        .filter-control .filter-caret {
+            position: absolute;
+            right: 8px;
+            color: #002b6b;
+            font-size: 18px;
+            pointer-events: none;
+        }
+        .mobile-field-label {
+            display: none;
+        }
         @media (max-width: 768px) {
-            .visit-list-head,
-            .location-row,
-            .location-row.is-admin,
-            .visit-list-head.is-admin {
-                grid-template-columns: 1fr 1fr;
-            }
             .visit-list-head { display: none; }
+            .location-row,
+            .location-row.is-admin {
+                grid-template-columns: 1fr auto;
+                gap: 10px;
+                padding: 14px;
+                align-items: start;
+                background-image: linear-gradient(180deg, rgba(255,255,255,0.88), rgba(255,255,255,0.82)), var(--loc-img);
+            }
+            .col-date { grid-column: 1; }
+            .col-loc { grid-column: 2; justify-self: end; align-self: start; }
+            .col-visitor,
+            .col-registrant {
+                grid-column: 1 / -1;
+                background: rgba(255, 255, 255, 0.94);
+                border: 1px solid rgba(0, 43, 107, 0.14);
+                border-radius: 10px;
+                padding: 10px 12px;
+            }
+            .col-registrant {
+                border-left: 3px solid #002b6b;
+            }
+            .col-visitor {
+                border-left: 3px solid #9a4600;
+            }
+            .mobile-field-label {
+                display: block;
+                font-size: 11px;
+                font-weight: 700;
+                letter-spacing: 0.04em;
+                color: #737783;
+                margin-bottom: 4px;
+            }
+            .col-share,
+            .col-admin {
+                grid-column: 1 / -1;
+                text-align: stretch;
+            }
+            .col-share .share-btn,
+            .col-admin .delete-btn {
+                width: 100%;
+                justify-content: center;
+                padding-top: 10px;
+                padding-bottom: 10px;
+            }
+            .filter-control {
+                min-width: 148px;
+            }
         }
     </style>
 </head>
@@ -208,19 +289,21 @@
 </div>
 
 <!-- Visit Management List Header -->
-<div class="flex items-center justify-between mb-md">
+<div class="flex flex-wrap items-center justify-between gap-3 mb-md">
 <h3 class="font-headline-sm text-headline-sm text-on-surface flex items-center gap-2">
                 최근 방문 내역
                 <span id="total-badge" class="px-2 py-0.5 bg-surface-container-high text-on-surface-variant text-[12px] font-medium rounded-full">Total 0</span>
 </h3>
-<div class="flex items-center gap-2">
-<select id="location-filter" class="flex items-center gap-1 px-3 py-1.5 border border-outline-variant bg-surface text-body-md font-medium rounded-lg hover:bg-surface-container-low transition-colors">
-<option value="">전체</option>
+<label class="filter-control" for="location-filter" aria-label="방문장소 필터">
+<span class="material-symbols-outlined filter-icon">location_on</span>
+<select id="location-filter">
+<option value="">전체 장소</option>
+<option value="서울">서울</option>
 <option value="포항">포항</option>
 <option value="광양">광양</option>
-<option value="서울">서울</option>
 </select>
-</div>
+<span class="material-symbols-outlined filter-caret">expand_more</span>
+</label>
 </div>
 <!-- Visit Table/List -->
 <div class="bg-surface border border-outline-variant rounded-xl overflow-hidden custom-shadow">
@@ -525,16 +608,17 @@
     }
     tbody.innerHTML = items.map((v) => `
       <div class="${locationRowClass(v.location)} group" data-id="${v.id}">
-        <div class="cursor-pointer visit-open">
+        <div class="col-date cursor-pointer visit-open">
           <div class="flex flex-col">
             <span class="font-body-md text-on-surface font-medium">${v.visit_date}</span>
             <span class="text-[12px] text-on-surface-variant">${v.time_range}</span>
           </div>
         </div>
-        <div class="cursor-pointer visit-open">
+        <div class="col-loc cursor-pointer visit-open">
           <span class="location-label">${formatLocation(v.location)}</span>
         </div>
-        <div class="cursor-pointer visit-open">
+        <div class="col-visitor cursor-pointer visit-open">
+          <div class="mobile-field-label">방문객</div>
           <div class="flex items-center gap-3 min-w-0">
             <div class="rounded-lg bg-white/80 border border-outline-variant flex items-center justify-center h-6 w-6 shrink-0">
               <span class="material-symbols-outlined text-primary text-[18px]">person</span>
@@ -545,20 +629,21 @@
             </div>
           </div>
         </div>
-        <div class="cursor-pointer visit-open min-w-0">
+        <div class="col-registrant cursor-pointer visit-open min-w-0">
+          <div class="mobile-field-label">등록자</div>
           <div class="flex flex-col min-w-0">
             <div class="font-medium text-on-surface text-body-md truncate">${v.registrant_name || '-'}</div>
             <div class="text-[12px] text-on-surface-variant truncate">${[v.registrant_team, v.purpose].filter(Boolean).join(' • ') || '-'}</div>
           </div>
         </div>
-        <div class="text-right">
+        <div class="col-share text-right">
           <button type="button" class="share-btn inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[12px] font-bold bg-white/85 text-primary border border-primary/20 hover:bg-white active:scale-95 transition-all" data-share-id="${v.id}">
             <span class="material-symbols-outlined text-[16px]">ios_share</span>
             공유
           </button>
         </div>
         ${isAdmin ? `
-        <div class="text-right">
+        <div class="col-admin text-right">
           <button type="button" class="delete-btn inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[12px] font-bold bg-error-container text-on-error-container hover:opacity-90 active:scale-95 transition-all" data-delete-id="${v.id}">
             <span class="material-symbols-outlined text-[16px]">delete</span>
             삭제
