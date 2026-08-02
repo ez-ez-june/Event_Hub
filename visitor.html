@@ -245,6 +245,7 @@
 (() => {
   const params = new URLSearchParams(window.location.search);
   const visitId = params.get('visit_id') || params.get('id') || '';
+  let profileId = params.get('profile_id') || '';
 
   const nameInput = document.getElementById('visitor-name');
   const companyInput = document.getElementById('visitor-company');
@@ -254,7 +255,17 @@
   const photoInput = document.getElementById('visitor-photo-input');
   const photoImg = document.getElementById('visitor-photo-img');
   const photoPlaceholder = document.getElementById('visitor-photo-placeholder');
+  const saveScheduleBtn = document.getElementById('save-schedule-btn');
+  const saveMainBtn = document.getElementById('save-main-btn');
   let photoDataUrl = '';
+
+  // 일정 없이 프로필만 등록하는 경우 버튼 문구 조정
+  if (!visitId) {
+    saveScheduleBtn.innerHTML = '저장 후<br>방문객 리스트';
+    saveMainBtn.innerHTML = '저장 후<br>메인화면이동';
+    const cancelHint = document.querySelector('#cancel-btn span');
+    if (cancelHint) cancelHint.textContent = '(리스트로 이동)';
+  }
 
   function setPhoto(dataUrl) {
     photoDataUrl = dataUrl || '';
@@ -351,6 +362,18 @@
       }
     }
 
+    if (profileId) {
+      try {
+        const res = await fetch(`/api/visitors/${profileId}`);
+        if (res.ok) {
+          applyProfile(await res.json());
+          return;
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
     try {
       const cached = JSON.parse(sessionStorage.getItem('pending_visitor_profile') || 'null');
       if (cached) {
@@ -373,11 +396,6 @@
   }
 
   async function saveProfile(redirectTo) {
-    if (!visitId) {
-      alert('연결된 방문 일정이 없습니다. 일정 등록 후 다시 시도하세요.');
-      return;
-    }
-
     const clearance = document.querySelector('input[name="clearance"]:checked');
     const payload = {
       visitor_name: nameInput.value.trim(),
@@ -389,14 +407,40 @@
       visitor_photo: photoDataUrl || '',
     };
 
+    if (!payload.visitor_name) {
+      alert('방문객 이름을 입력해 주세요.');
+      nameInput.focus();
+      return;
+    }
+
     try {
-      const res = await fetch(`/api/visits/${visitId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
+      let res;
+      if (visitId) {
+        // 일정에 연결된 프로필 저장 (+ 서버에서 독립 프로필 DB도 동기화)
+        res = await fetch(`/api/visits/${visitId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+      } else if (profileId) {
+        res = await fetch(`/api/visitors/${profileId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+      } else {
+        // 방문 일정 없이 프로필만 등록
+        res = await fetch('/api/visitors', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+      }
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || '저장 실패');
+      if (data.profile_id) profileId = String(data.profile_id);
+      else if (data.id && !visitId) profileId = String(data.id);
+      alert('방문객 프로필이 저장되었습니다.');
       window.location.href = redirectTo;
     } catch (err) {
       alert(err.message || '프로필 저장 중 오류가 발생했습니다.');
@@ -419,15 +463,24 @@
   });
 
   document.getElementById('cancel-btn').addEventListener('click', () => {
-    if (confirm('작성을 취소하고 메인화면으로 이동할까요?')) {
-      window.location.href = '/';
+    const backTo = visitId ? '/' : '/visitor_list.html';
+    if (confirm(visitId ? '작성을 취소하고 메인화면으로 이동할까요?' : '작성을 취소하고 방문객 리스트로 이동할까요?')) {
+      window.location.href = backTo;
     }
   });
   document.getElementById('save-schedule-btn').addEventListener('click', () => {
-    saveProfile(visitId ? `/managing_schedule.html?id=${encodeURIComponent(visitId)}` : '/managing_schedule.html');
+    if (visitId) {
+      saveProfile(`/managing_schedule.html?id=${encodeURIComponent(visitId)}`);
+    } else {
+      saveProfile('/visitor_list.html');
+    }
   });
   document.getElementById('save-main-btn').addEventListener('click', () => {
-    saveProfile(visitId ? `/visit_management.html?id=${encodeURIComponent(visitId)}` : '/');
+    if (visitId) {
+      saveProfile(`/visit_management.html?id=${encodeURIComponent(visitId)}`);
+    } else {
+      saveProfile('/');
+    }
   });
 
   loadFromVisit();

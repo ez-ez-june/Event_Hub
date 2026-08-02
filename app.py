@@ -88,6 +88,110 @@ class Visit(db.Model):
         }
 
 
+class VisitorProfile(db.Model):
+    """방문 일정과 독립적인 외부인사(방문객) 프로필."""
+
+    __tablename__ = "visitor_profiles"
+
+    id = db.Column(db.Integer, primary_key=True)
+    visitor_name = db.Column(db.String(120), nullable=False, index=True)
+    visitor_company = db.Column(db.String(120), nullable=False, default="", index=True)
+    visitor_email = db.Column(db.String(200), nullable=False, default="")
+    visitor_phone = db.Column(db.String(80), nullable=False, default="")
+    visitor_clearance = db.Column(db.String(80), nullable=False, default="")
+    visitor_notes = db.Column(db.Text, nullable=False, default="")
+    visitor_photo = db.Column(db.Text, nullable=False, default="")
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "profile_id": self.id,
+            "visit_id": None,
+            "visitor_name": self.visitor_name or "",
+            "visitor_company": self.visitor_company or "",
+            "visitor_email": self.visitor_email or "",
+            "visitor_phone": self.visitor_phone or "",
+            "visitor_clearance": self.visitor_clearance or "",
+            "visitor_notes": self.visitor_notes or "",
+            "visitor_photo": self.visitor_photo or "",
+            "location": "",
+            "visit_date": "",
+            "time_range": "",
+            "source": "profile",
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
+def _visitor_key(name: str, company: str):
+    return ((name or "").strip().lower(), (company or "").strip().lower())
+
+
+def _apply_visitor_fields(target, data: dict, *, require_name: bool = True):
+    name = (data.get("visitor_name") or getattr(target, "visitor_name", "") or "").strip()
+    if require_name and not name:
+        raise ValueError("방문객 이름은 필수입니다.")
+    try:
+        photo = _normalize_photo(data.get("visitor_photo")) if "visitor_photo" in data else None
+    except ValueError:
+        raise
+
+    if "visitor_name" in data or require_name:
+        target.visitor_name = name
+    if "visitor_company" in data:
+        target.visitor_company = (data.get("visitor_company") or "").strip()
+    if "visitor_email" in data:
+        target.visitor_email = (data.get("visitor_email") or "").strip()
+    if "visitor_phone" in data:
+        target.visitor_phone = (data.get("visitor_phone") or "").strip()
+    if "visitor_clearance" in data:
+        target.visitor_clearance = (data.get("visitor_clearance") or "").strip()
+    if "visitor_notes" in data:
+        target.visitor_notes = (data.get("visitor_notes") or "").replace("\r\n", "\n").strip()
+    if photo is not None:
+        target.visitor_photo = photo
+    return target
+
+
+def upsert_visitor_profile(data: dict, profile_id: int | None = None) -> VisitorProfile:
+    """프로필 전용 DB에 생성/갱신 (이름+소속 기준 중복 시 갱신)."""
+    if profile_id:
+        profile = VisitorProfile.query.get(profile_id)
+        if not profile:
+            raise LookupError("프로필을 찾을 수 없습니다.")
+        _apply_visitor_fields(profile, data, require_name=True)
+        profile.updated_at = datetime.utcnow()
+        db.session.commit()
+        return profile
+
+    name = (data.get("visitor_name") or "").strip()
+    company = (data.get("visitor_company") or "").strip()
+    if not name:
+        raise ValueError("방문객 이름은 필수입니다.")
+
+    existing = (
+        VisitorProfile.query.filter(
+            db.func.lower(VisitorProfile.visitor_name) == name.lower(),
+            db.func.lower(VisitorProfile.visitor_company) == company.lower(),
+        )
+        .order_by(VisitorProfile.updated_at.desc())
+        .first()
+    )
+    if existing:
+        _apply_visitor_fields(existing, data, require_name=True)
+        existing.updated_at = datetime.utcnow()
+        db.session.commit()
+        return existing
+
+    profile = VisitorProfile()
+    _apply_visitor_fields(profile, data, require_name=True)
+    db.session.add(profile)
+    db.session.commit()
+    return profile
+
+
 STATUS_STYLES = {
     "Confirmed": "bg-primary/10 text-primary",
     "Urgent": "bg-secondary/10 text-secondary",
@@ -184,24 +288,19 @@ def public_config():
 
 @app.get("/api/visitors")
 def list_visitors():
-    """방문 기록 기준 방문객 목록 (이름+소속 기준 최신 프로필)."""
+    """방문객 목록: 독립 프로필 + 방문 일정에서 추출한 프로필(이름+소속 기준)."""
     q = (request.args.get("q") or "").strip().lower()
-    visits = Visit.query.order_by(Visit.visit_date.desc(), Visit.created_at.desc()).all()
     latest = {}
-    for visit in visits:
-        key = (
-            (visit.visitor_name or "").strip().lower(),
-            (visit.visitor_company or "").strip().lower(),
-        )
-        if not key[0]:
-            continue
-        if key not in latest:
-            latest[key] = visit
 
-    items = []
-    for visit in latest.values():
-        row = {
+    # 1) 방문 일정 기반 (같은 이름+소속은 최신 방문 우선)
+    visits = Visit.query.order_by(Visit.visit_date.desc(), Visit.created_at.desc()).all()
+    for visit in visits:
+        key = _visitor_key(visit.visitor_name, visit.visitor_company)
+        if not key[0] or key in latest:
+            continue
+        latest[key] = {
             "visit_id": visit.id,
+            "profile_id": None,
             "visitor_name": visit.visitor_name or "",
             "visitor_company": visit.visitor_company or "",
             "visitor_email": visit.visitor_email or "",
@@ -211,24 +310,78 @@ def list_visitors():
             "visitor_photo": visit.visitor_photo or "",
             "location": visit.location or "",
             "visit_date": visit.visit_date.strftime("%Y.%m.%d") if visit.visit_date else "",
-            "time_range": f"{visit.start_time.strftime('%H:%M')} - {visit.end_time.strftime('%H:%M')}" if visit.start_time and visit.end_time else "",
+            "time_range": (
+                f"{visit.start_time.strftime('%H:%M')} - {visit.end_time.strftime('%H:%M')}"
+                if visit.start_time and visit.end_time
+                else ""
+            ),
+            "source": "visit",
         }
+
+    # 2) 독립 프로필이 있으면 덮어씀 (외부인사 DB가 우선)
+    profiles = VisitorProfile.query.order_by(VisitorProfile.updated_at.desc()).all()
+    for profile in profiles:
+        key = _visitor_key(profile.visitor_name, profile.visitor_company)
+        if not key[0]:
+            continue
+        row = profile.to_dict()
+        # 기존 visit_id가 있으면 유지해 상세 연결 가능
+        if key in latest and latest[key].get("visit_id"):
+            row["visit_id"] = latest[key]["visit_id"]
+            row["location"] = latest[key].get("location") or ""
+            row["visit_date"] = latest[key].get("visit_date") or ""
+            row["time_range"] = latest[key].get("time_range") or ""
+        latest[key] = row
+
+    items = []
+    for row in latest.values():
         if q:
-            hay = " ".join([
-                row["visitor_name"],
-                row["visitor_company"],
-                row["visitor_email"],
-                row["visitor_phone"],
-                row["visitor_clearance"],
-                row["location"],
-                row["visitor_notes"],
-            ]).lower()
+            hay = " ".join(
+                [
+                    row["visitor_name"],
+                    row["visitor_company"],
+                    row["visitor_email"],
+                    row["visitor_phone"],
+                    row["visitor_clearance"],
+                    row.get("location") or "",
+                    row["visitor_notes"],
+                ]
+            ).lower()
             if q not in hay:
                 continue
         items.append(row)
 
     items.sort(key=lambda x: (x["visitor_name"], x["visitor_company"]))
     return jsonify({"items": items, "total": len(items)})
+
+
+@app.get("/api/visitors/<int:profile_id>")
+def get_visitor_profile(profile_id: int):
+    profile = VisitorProfile.query.get_or_404(profile_id)
+    return jsonify(profile.to_dict())
+
+
+@app.post("/api/visitors")
+def create_visitor_profile():
+    """방문 일정 없이 프로필만 등록/갱신."""
+    data = request.get_json(silent=True) or {}
+    try:
+        profile = upsert_visitor_profile(data)
+    except ValueError as err:
+        return jsonify({"error": str(err)}), 400
+    return jsonify(profile.to_dict()), 201
+
+
+@app.put("/api/visitors/<int:profile_id>")
+def update_visitor_profile(profile_id: int):
+    data = request.get_json(silent=True) or {}
+    try:
+        profile = upsert_visitor_profile(data, profile_id=profile_id)
+    except LookupError as err:
+        return jsonify({"error": str(err)}), 404
+    except ValueError as err:
+        return jsonify({"error": str(err)}), 400
+    return jsonify(profile.to_dict())
 
 
 @app.post("/api/share-images")
@@ -370,6 +523,20 @@ def create_visit():
 
     db.session.add(visit)
     db.session.commit()
+    try:
+        upsert_visitor_profile(
+            {
+                "visitor_name": visit.visitor_name,
+                "visitor_company": visit.visitor_company,
+                "visitor_email": visit.visitor_email,
+                "visitor_phone": visit.visitor_phone,
+                "visitor_clearance": visit.visitor_clearance,
+                "visitor_notes": visit.visitor_notes,
+                "visitor_photo": visit.visitor_photo,
+            }
+        )
+    except ValueError:
+        pass
     return jsonify(visit.to_dict()), 201
 
 
@@ -419,11 +586,34 @@ def update_visit(visit_id: int):
         return jsonify({"error": str(exc)}), 400
 
     db.session.commit()
+
+    # 방문 프로필 저장 시 독립 프로필 DB에도 동기화
+    visitor_fields = (
+        "visitor_name",
+        "visitor_company",
+        "visitor_email",
+        "visitor_phone",
+        "visitor_clearance",
+        "visitor_notes",
+        "visitor_photo",
+    )
+    if any(f in data for f in visitor_fields) and (visit.visitor_name or "").strip():
+        try:
+            upsert_visitor_profile(
+                {
+                    "visitor_name": visit.visitor_name,
+                    "visitor_company": visit.visitor_company,
+                    "visitor_email": visit.visitor_email,
+                    "visitor_phone": visit.visitor_phone,
+                    "visitor_clearance": visit.visitor_clearance,
+                    "visitor_notes": visit.visitor_notes,
+                    "visitor_photo": visit.visitor_photo,
+                }
+            )
+        except ValueError:
+            pass
+
     return jsonify(visit.to_dict())
-
-
-@app.delete("/api/visits/<int:visit_id>")
-def delete_visit(visit_id: int):
     visit = Visit.query.get_or_404(visit_id)
     db.session.delete(visit)
     db.session.commit()
