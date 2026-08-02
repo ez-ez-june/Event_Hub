@@ -171,57 +171,6 @@
             font-weight: 700;
             box-shadow: 0 1px 2px rgba(0,0,0,0.04);
         }
-        .filter-control {
-            position: relative;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            height: 38px;
-            padding: 0 14px 0 12px;
-            border: 1.5px solid #002b6b;
-            border-radius: 999px;
-            background: #ffffff;
-            transition: background 0.15s ease, box-shadow 0.15s ease;
-            cursor: pointer;
-        }
-        .filter-control:hover {
-            background: #f8f9ff;
-        }
-        .filter-control:focus-within {
-            box-shadow: 0 0 0 3px rgba(0, 43, 107, 0.12);
-        }
-        .filter-control .filter-icon,
-        .filter-control .filter-caret {
-            display: block;
-            flex-shrink: 0;
-            color: #002b6b;
-        }
-        .filter-control .filter-icon {
-            width: 16px;
-            height: 16px;
-        }
-        .filter-control .filter-caret {
-            width: 12px;
-            height: 12px;
-            pointer-events: none;
-        }
-        .filter-control select {
-            appearance: none;
-            -webkit-appearance: none;
-            border: 0;
-            background: transparent;
-            color: #002b6b;
-            font-family: "Plus Jakarta Sans", sans-serif;
-            font-size: 14px;
-            font-weight: 700;
-            letter-spacing: -0.01em;
-            line-height: 1;
-            padding: 0;
-            margin: 0;
-            min-width: 4.8em;
-            outline: none;
-            cursor: pointer;
-        }
         .location-row > * {
             min-width: 0;
         }
@@ -282,21 +231,14 @@
                 최근 방문 내역
                 <span id="total-badge" class="px-2 py-0.5 bg-surface-container-high text-on-surface-variant text-[12px] font-medium rounded-full">Total 0</span>
 </h3>
-<label class="filter-control" for="location-filter" aria-label="방문장소 필터">
-<svg class="filter-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-<path d="M12 22s7-7.2 7-12.2A7 7 0 1 0 5 9.8C5 14.8 12 22 12 22z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-<circle cx="12" cy="9.5" r="2.4" stroke="currentColor" stroke-width="1.8"/>
-</svg>
-<select id="location-filter">
+<div class="flex items-center gap-2">
+<select id="location-filter" class="flex items-center gap-1 px-3 py-1.5 border border-outline-variant bg-surface text-body-md font-medium rounded-lg hover:bg-surface-container-low transition-colors">
 <option value="">전체 장소</option>
-<option value="서울">서울</option>
 <option value="포항">포항</option>
 <option value="광양">광양</option>
+<option value="서울">서울</option>
 </select>
-<svg class="filter-caret" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-<path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-</svg>
-</label>
+</div>
 </div>
 <!-- Visit Table/List -->
 <div class="bg-surface border border-outline-variant rounded-xl overflow-hidden custom-shadow">
