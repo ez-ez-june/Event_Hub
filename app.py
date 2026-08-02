@@ -155,6 +155,11 @@ def visitor():
     return send_from_directory(BASE_DIR, "visitor.html")
 
 
+@app.route("/visitor_list.html")
+def visitor_list():
+    return send_from_directory(BASE_DIR, "visitor_list.html")
+
+
 @app.route("/navigator.html")
 def navigator():
     return send_from_directory(BASE_DIR, "navigator.html")
@@ -175,6 +180,55 @@ def public_config():
         "kakao_js_key": (os.environ.get("KAKAO_JS_KEY") or "").strip(),
         "public_origin": (os.environ.get("PUBLIC_ORIGIN") or "").strip(),
     })
+
+
+@app.get("/api/visitors")
+def list_visitors():
+    """방문 기록 기준 방문객 목록 (이름+소속 기준 최신 프로필)."""
+    q = (request.args.get("q") or "").strip().lower()
+    visits = Visit.query.order_by(Visit.visit_date.desc(), Visit.created_at.desc()).all()
+    latest = {}
+    for visit in visits:
+        key = (
+            (visit.visitor_name or "").strip().lower(),
+            (visit.visitor_company or "").strip().lower(),
+        )
+        if not key[0]:
+            continue
+        if key not in latest:
+            latest[key] = visit
+
+    items = []
+    for visit in latest.values():
+        row = {
+            "visit_id": visit.id,
+            "visitor_name": visit.visitor_name or "",
+            "visitor_company": visit.visitor_company or "",
+            "visitor_email": visit.visitor_email or "",
+            "visitor_phone": visit.visitor_phone or "",
+            "visitor_clearance": visit.visitor_clearance or "",
+            "visitor_notes": visit.visitor_notes or "",
+            "visitor_photo": visit.visitor_photo or "",
+            "location": visit.location or "",
+            "visit_date": visit.visit_date.strftime("%Y.%m.%d") if visit.visit_date else "",
+            "time_range": f"{visit.start_time.strftime('%H:%M')} - {visit.end_time.strftime('%H:%M')}" if visit.start_time and visit.end_time else "",
+        }
+        if q:
+            hay = " ".join([
+                row["visitor_name"],
+                row["visitor_company"],
+                row["visitor_email"],
+                row["visitor_phone"],
+                row["visitor_clearance"],
+                row["location"],
+                row["visitor_notes"],
+            ]).lower()
+            if q not in hay:
+                continue
+        items.append(row)
+
+    items.sort(key=lambda x: (x["visitor_name"], x["visitor_company"]))
+    return jsonify({"items": items, "total": len(items)})
 
 
 @app.post("/api/share-images")

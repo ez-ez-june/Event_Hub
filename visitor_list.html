@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html class="light" lang="ko">
+<head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>방문객 리스트 - POSCO Visit</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@600;700;800&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        colors: {
+          primary: "#002b6b",
+          "primary-container": "#004098",
+          "on-primary": "#ffffff",
+          surface: "#f8f9ff",
+          "surface-container": "#e5eeff",
+          "surface-container-low": "#eef4ff",
+          "surface-container-high": "#dfe9fa",
+          "surface-container-lowest": "#ffffff",
+          "on-surface": "#121c28",
+          "on-surface-variant": "#434652",
+          outline: "#737783",
+          "outline-variant": "#c3c6d4",
+          secondary: "#9a4600",
+        },
+        fontFamily: {
+          headline: ["Plus Jakarta Sans"],
+          body: ["Inter"],
+        },
+        spacing: {
+          "margin-mobile": "20px",
+          "margin-desktop": "40px",
+          md: "16px",
+          lg: "24px",
+        },
+      },
+    },
+  };
+</script>
+<style>
+  .material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  }
+  body {
+    background: #f8f9ff;
+    -webkit-font-smoothing: antialiased;
+  }
+  .glass-header {
+    backdrop-filter: blur(8px);
+    background-color: rgba(248, 249, 255, 0.88);
+  }
+  .search-panel {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.25s ease, opacity 0.2s ease, margin 0.2s ease;
+    opacity: 0;
+  }
+  .search-panel.is-open {
+    max-height: 80px;
+    opacity: 1;
+    margin-bottom: 12px;
+  }
+</style>
+</head>
+<body class="font-body text-on-surface">
+<header class="fixed top-0 left-0 w-full z-40 border-b border-outline-variant glass-header">
+  <div class="flex justify-between items-center h-16 px-margin-mobile md:px-margin-desktop w-full gap-3">
+    <div class="flex items-center gap-2 min-w-0">
+      <a href="/" class="flex items-center justify-center w-9 h-9 rounded-lg hover:bg-surface-container-low text-primary shrink-0" aria-label="대시보드로">
+        <span class="material-symbols-outlined">arrow_back</span>
+      </a>
+      <div class="min-w-0">
+        <h1 class="font-headline text-[18px] md:text-[22px] font-bold text-primary truncate">방문객 리스트</h1>
+        <p id="list-count" class="text-[12px] text-on-surface-variant">Total 0</p>
+      </div>
+    </div>
+    <button type="button" id="search-toggle-btn" class="flex items-center justify-center w-10 h-10 rounded-full border border-outline-variant bg-surface-container-lowest text-primary hover:bg-surface-container-low active:scale-95 transition-all" aria-label="검색">
+      <span class="material-symbols-outlined">search</span>
+    </button>
+  </div>
+</header>
+
+<main class="pt-20 px-margin-mobile md:px-margin-desktop max-w-3xl mx-auto pb-28">
+  <div id="search-panel" class="search-panel">
+    <div class="relative">
+      <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[20px]">search</span>
+      <input id="search-input" type="search" placeholder="이름, 소속, 연락처, 이메일 검색" class="w-full h-11 pl-10 pr-10 rounded-xl border border-outline-variant bg-surface-container-lowest text-body text-[14px] outline-none focus:ring-2 focus:ring-primary focus:border-primary" autocomplete="off">
+      <button type="button" id="search-clear-btn" class="hidden absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full text-outline hover:bg-surface-container-low" aria-label="검색어 지우기">
+        <span class="material-symbols-outlined text-[18px]">close</span>
+      </button>
+    </div>
+  </div>
+
+  <div id="visitor-list" class="space-y-3">
+    <div class="py-10 text-center text-on-surface-variant">불러오는 중...</div>
+  </div>
+</main>
+
+<a href="/visitor.html" id="add-profile-btn" class="fixed right-5 bottom-6 z-50 w-14 h-14 rounded-full bg-primary text-on-primary shadow-lg flex items-center justify-center hover:bg-primary-container active:scale-95 transition-all" aria-label="프로필 등록">
+  <span class="material-symbols-outlined text-[28px]" style="font-variation-settings: 'FILL' 1;">add</span>
+</a>
+
+<script>
+(() => {
+  const listEl = document.getElementById('visitor-list');
+  const countEl = document.getElementById('list-count');
+  const searchToggleBtn = document.getElementById('search-toggle-btn');
+  const searchPanel = document.getElementById('search-panel');
+  const searchInput = document.getElementById('search-input');
+  const searchClearBtn = document.getElementById('search-clear-btn');
+
+  let searchOpen = false;
+  let debounceTimer = null;
+
+  function photoBlock(photo) {
+    if (photo) {
+      return `<img src="${photo}" alt="" class="w-full h-full object-cover">`;
+    }
+    return `<svg class="w-full h-full" viewBox="0 0 96 128" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <rect width="96" height="128" fill="#e8edf5"/>
+      <circle cx="48" cy="42" r="22" fill="#b0becf"/>
+      <path d="M18 118c0-22 13.4-36 30-36s30 14 30 36" fill="#b0becf"/>
+    </svg>`;
+  }
+
+  function escapeHtml(value) {
+    return String(value || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function renderItems(items) {
+    countEl.textContent = `Total ${items.length}`;
+    if (!items.length) {
+      listEl.innerHTML = `<div class="py-12 text-center text-on-surface-variant border border-dashed border-outline-variant rounded-xl bg-surface-container-lowest">등록된 방문객이 없습니다.</div>`;
+      return;
+    }
+    listEl.innerHTML = items.map((v) => `
+      <a href="/visit_management.html?id=${encodeURIComponent(v.visit_id)}" class="block bg-surface-container-lowest border border-outline-variant rounded-xl p-3 hover:border-primary/30 hover:shadow-sm transition-all">
+        <div class="flex gap-3 items-start">
+          <div class="w-14 h-[74px] rounded-md border border-outline-variant overflow-hidden bg-[#e8edf5] shrink-0">
+            ${photoBlock(v.visitor_photo)}
+          </div>
+          <div class="min-w-0 flex-1">
+            <div class="flex items-start justify-between gap-2">
+              <div class="min-w-0">
+                <div class="font-semibold text-[15px] text-on-surface truncate">${escapeHtml(v.visitor_name || '-')}</div>
+                <div class="text-[13px] text-on-surface-variant truncate mt-0.5">${escapeHtml(v.visitor_company || '소속 미등록')}</div>
+              </div>
+              <span class="shrink-0 text-[11px] font-bold px-2 py-0.5 rounded-full bg-surface-container text-primary">${escapeHtml(v.visitor_clearance || '등급 미설정')}</span>
+            </div>
+            <div class="mt-2 text-[12px] text-on-surface-variant space-y-0.5">
+              <div class="truncate">${escapeHtml(v.visitor_phone || '연락처 없음')} · ${escapeHtml(v.visitor_email || '이메일 없음')}</div>
+              <div class="truncate">최근 방문 ${escapeHtml(v.visit_date || '-')} · ${escapeHtml(v.location || '-')}</div>
+            </div>
+          </div>
+        </div>
+      </a>
+    `).join('');
+  }
+
+  async function loadVisitors(q = '') {
+    listEl.innerHTML = `<div class="py-10 text-center text-on-surface-variant">불러오는 중...</div>`;
+    try {
+      const params = new URLSearchParams();
+      if (q) params.set('q', q);
+      const res = await fetch(`/api/visitors?${params}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || '목록을 불러오지 못했습니다.');
+      renderItems(data.items || []);
+    } catch (err) {
+      listEl.innerHTML = `<div class="py-10 text-center text-red-600">${escapeHtml(err.message || '오류가 발생했습니다.')}</div>`;
+    }
+  }
+
+  function setSearchOpen(open) {
+    searchOpen = open;
+    searchPanel.classList.toggle('is-open', open);
+    searchToggleBtn.classList.toggle('bg-primary', open);
+    searchToggleBtn.classList.toggle('text-on-primary', open);
+    searchToggleBtn.classList.toggle('border-primary', open);
+    if (open) {
+      searchInput.focus();
+    } else {
+      searchInput.value = '';
+      searchClearBtn.classList.add('hidden');
+      loadVisitors('');
+    }
+  }
+
+  searchToggleBtn.addEventListener('click', () => {
+    setSearchOpen(!searchOpen);
+  });
+
+  searchInput.addEventListener('input', () => {
+    const q = searchInput.value.trim();
+    searchClearBtn.classList.toggle('hidden', !q);
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => loadVisitors(q), 220);
+  });
+
+  searchClearBtn.addEventListener('click', () => {
+    searchInput.value = '';
+    searchClearBtn.classList.add('hidden');
+    searchInput.focus();
+    loadVisitors('');
+  });
+
+  loadVisitors();
+})();
+</script>
+</body>
+</html>
